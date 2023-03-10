@@ -63,11 +63,14 @@ are in composable kernels. The scale and add logic is performed via Acc0ElementO
 #include "contrib_ops/cpu/bert/attention_base.h"
 #include "contrib_ops/rocm/bert/attention_impl.h"
 #include "contrib_ops/rocm/bert/attention_softmax.h"
-#include "contrib_ops/rocm/bert/batched_gemm_softmax_gemm_permute_ck_impl/impl.cuh"
+#include "contrib_ops/rocm/bert/ck_attention_bias_mask_preprocess.cuh"
 
 #include "ck/ck.hpp"
 #include "ck/tensor_operation/gpu/device/tensor_layout.hpp"
+#include "ck/tensor_operation/gpu/device/device_batched_gemm_softmax_gemm_permute.hpp"
 #include "ck/tensor_operation/gpu/element/element_wise_operation.hpp"
+#include "ck/library/tensor_operation_instance/gpu/batched_gemm_softmax_gemm_permute.hpp"
+#include "ck/library/tensor_operation_instance/gpu/batched_gemm_bias_softmax_gemm_permute.hpp"
 
 #include <array>
 #include <vector>
@@ -320,12 +323,16 @@ class GemmSoftmaxGemmPermuteTunableOp : public tunable::TunableOp<GemmSoftmaxGem
     }
   }
 
-  inline static size_t GetWorkspaceNumBytes(const AttentionParameters* attn) {
+  inline static size_t GetWorkspaceNumBytes(const AttentionParameters* attn, bool has_relative_position_bias) {
     if (!IsSupportedMaskType(attn)) {
       return 0;
     }
-    auto [buffer, sizes, strides] = GetRawMaskBufferAddrSizesAndStrides(nullptr, attn);
-    return sizeof(T) * sizes.x * sizes.y * sizes.z;
+    if (has_relative_position_bias) {
+      return sizeof(T) * attn->batch_size * attn->num_heads * attn->sequence_length * attn->total_sequence_length;
+    } else {
+      auto [buffer, sizes, strides] = GetRawMaskBufferAddrSizesAndStrides(nullptr, attn);
+      return sizeof(T) * sizes.x * sizes.y * sizes.z;
+    }
   }
 
   template <int VecSize, typename Converter>
@@ -387,26 +394,47 @@ class GemmSoftmaxGemmPermuteTunableOp : public tunable::TunableOp<GemmSoftmaxGem
 
     return HIP_CALL(hipGetLastError());
   }
+
+  static inline Status LaunchAddBiasAndConvertMask(const GemmSoftmaxGemmPermuteParams<T>* params) {
+    return internal::LaunchAddBiasAndConvertMask(params);
+  }
 };
 
 template <typename T, bool USE_BIAS, bool USE_MASK>
 auto GetCKGemmSoftmaxGemmPermuteTypeStringAndOps() {
-  constexpr const int kNumBiasBuffer = static_cast<int>(USE_BIAS) + static_cast<int>(USE_MASK);
+  constexpr const int kNumBiasBuffer = static_cast<int>(USE_BIAS || USE_MASK);
 
   using Nop = ck::tensor_operation::element_wise::PassThrough;
-  using Acc0ElementOp = internal::PreSoftmaxAttentionScoreOp;
+  using Acc0ElementOp = std::conditional_t<
+      USE_MASK || USE_BIAS,
+      ck::tensor_operation::element_wise::ScaleAdd,
+      ck::tensor_operation::element_wise::Scale>;
 
   using CKDataType = typename DataTypeAdaptor<T>::type;
-  using D0DataType = typename ck::detail::tuple_concat<
-      std::conditional_t<USE_BIAS, ck::Tuple<CKDataType>, ck::Tuple<>>,
-      std::conditional_t<USE_MASK, ck::Tuple<CKDataType>, ck::Tuple<>>>::type;
+  using D0DataType = std::conditional_t<USE_BIAS || USE_MASK, ck::Tuple<CKDataType>, ck::Tuple<>>;
 
   constexpr static auto MaskingSpec =
       ck::tensor_operation::device::MaskingSpecialization::MaskDisabled;
 
+  using GemmSoftmaxGemmPermute = ck::tensor_operation::device::DeviceBatchedGemmSoftmaxGemmPermute<
+      2, 1, 1, 1, 1,
+      CKDataType,
+      CKDataType,
+      CKDataType,
+      CKDataType,
+      D0DataType,
+      ck::Tuple<>,
+      Nop,
+      Nop,
+      Acc0ElementOp,
+      Nop,
+      Nop,
+      MaskingSpec>;
+  using InstanceFactory = ck::tensor_operation::device::instance::DeviceOperationInstanceFactory<
+      GemmSoftmaxGemmPermute>;
+
   std::vector<std::pair<std::string, Op<GemmSoftmaxGemmPermuteParams<T>>>> ret;
-  for (auto&& impl : internal::GetDeviceBatchedGemmSoftmaxGemmPermuteInstances<
-           CKDataType, D0DataType, internal::F32, internal::PreSoftmaxAttentionScoreOp, MaskingSpec>()) {
+  for (auto&& impl : InstanceFactory::GetInstances()) {
     auto type_string = impl->GetTypeString();
 
     auto invoker = impl->MakeInvokerPointer();
@@ -451,20 +479,23 @@ auto GetCKGemmSoftmaxGemmPermuteTypeStringAndOps() {
       std::array<std::vector<ck::index_t>, kNumBiasBuffer> bias_lengths{};
       std::array<std::vector<ck::index_t>, kNumBiasBuffer> bias_strides{};
       if constexpr (USE_BIAS) {
-        bias_buffers[0] = const_cast<T*>(params->bias_buffer);
+        if constexpr (USE_MASK) {
+          bias_buffers[0] = params->workspace_buffer;
+        } else {
+          bias_buffers[0] = const_cast<T*>(params->bias_buffer);
+        }
         bias_lengths[0] = {G0, G1, M, N};  // BN(G0*G1), S(M), T(N)
         bias_strides[0] = {G1 * M * N, M * N, N, 1};
-      }
-      if constexpr (USE_MASK) {
-        bias_buffers[kNumBiasBuffer - 1] = params->workspace_buffer;
-        bias_lengths[kNumBiasBuffer - 1] = {G0, G1, M, N};  // BN(G0*G1), S(M), T(N)
+      } else if constexpr (USE_MASK) {
+        bias_buffers[0] = params->workspace_buffer;
+        bias_lengths[0] = {G0, G1, M, N};  // BN(G0*G1), S(M), T(N)
         if (params->mask_index_dims.size() == 2) {          // [B,T]
-          bias_strides[kNumBiasBuffer - 1] = {N, 0, 0, 1};
+          bias_strides[0] = {N, 0, 0, 1};
         } else if (params->mask_index_dims.size() == 3) {  // [B,S,T]
-          bias_strides[kNumBiasBuffer - 1] = {M * N, 0, N, 1};
+          bias_strides[0] = {M * N, 0, N, 1};
         } else if (params->mask_index_dims.size() == 4) {  // [B,1,max_seq_len,max_seq_len]
           ck::index_t max_seq_len = params->attention->max_sequence_length;
-          bias_strides[kNumBiasBuffer - 1] = {max_seq_len * max_seq_len, 0, max_seq_len, 1};
+          bias_strides[0] = {max_seq_len * max_seq_len, 0, max_seq_len, 1};
         } else {
           ORT_ENFORCE(false, "Unreachable");
         }
@@ -483,14 +514,16 @@ auto GetCKGemmSoftmaxGemmPermuteTypeStringAndOps() {
           {},
           Nop{},
           Nop{},
-          Acc0ElementOp{params->scale, params->attention->mask_filter_value},
+          Acc0ElementOp{params->scale},
           Nop{},
           Nop{});
 
       TUNABLE_OP_RETURN_UNSUPPORTED_ARGUMENT_IF(!impl->IsSupportedArgument(arg.get()),
                                                 impl->GetTypeString(), " does not support ", params->Signature());
 
-      if constexpr (USE_MASK) {
+      if constexpr (USE_BIAS && USE_MASK) {
+        ORT_RETURN_IF_ERROR(internal::LaunchAddBiasAndConvertMask(params));
+      } else if constexpr (!USE_BIAS && USE_MASK) {
         ORT_RETURN_IF_ERROR(GemmSoftmaxGemmPermuteTunableOp<T>::LaunchConvertToFilledMaskValue(params));
       }
       invoker->Run(arg.get(), StreamConfig{params->Stream()});
@@ -507,20 +540,22 @@ GemmSoftmaxGemmPermuteTunableOp<T>::GemmSoftmaxGemmPermuteTunableOp() {
     return GemmSoftmaxGemmPermuteGenericPipeline<T>::Run(params, false);
   });
 
-  for (auto&& [_, op] : GetCKGemmSoftmaxGemmPermuteTypeStringAndOps<T, /*USE_BIAS=*/false, /*USE_MASK=*/false>()) {
-    this->RegisterOp(std::move(op));
-  }
+  if constexpr (std::is_same_v<T, half>) {
+    for (auto&& [_, op] : GetCKGemmSoftmaxGemmPermuteTypeStringAndOps<T, /*USE_BIAS=*/false, /*USE_MASK=*/false>()) {
+      this->RegisterOp(std::move(op));
+    }
 
-  for (auto&& [_, op] : GetCKGemmSoftmaxGemmPermuteTypeStringAndOps<T, /*USE_BIAS=*/true, /*USE_MASK=*/false>()) {
-    this->RegisterOp(std::move(op));
-  }
+    for (auto&& [_, op] : GetCKGemmSoftmaxGemmPermuteTypeStringAndOps<T, /*USE_BIAS=*/true, /*USE_MASK=*/false>()) {
+      this->RegisterOp(std::move(op));
+    }
 
-  for (auto&& [_, op] : GetCKGemmSoftmaxGemmPermuteTypeStringAndOps<T, /*USE_BIAS=*/false, /*USE_MASK=*/true>()) {
-    this->RegisterOp(std::move(op));
-  }
+    for (auto&& [_, op] : GetCKGemmSoftmaxGemmPermuteTypeStringAndOps<T, /*USE_BIAS=*/false, /*USE_MASK=*/true>()) {
+      this->RegisterOp(std::move(op));
+    }
 
-  for (auto&& [_, op] : GetCKGemmSoftmaxGemmPermuteTypeStringAndOps<T, /*USE_BIAS=*/true, /*USE_MASK=*/true>()) {
-    this->RegisterOp(std::move(op));
+    for (auto&& [_, op] : GetCKGemmSoftmaxGemmPermuteTypeStringAndOps<T, /*USE_BIAS=*/true, /*USE_MASK=*/true>()) {
+      this->RegisterOp(std::move(op));
+    }
   }
 }
 

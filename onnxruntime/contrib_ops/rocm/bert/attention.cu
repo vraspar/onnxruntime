@@ -85,9 +85,10 @@ Status Attention<T>::ComputeInternal(OpKernelContext* context) const {
   using AttentionGeneric = GemmSoftmaxGemmPermuteGenericPipeline<HipT>;
   using AttentionTunableOp = GemmSoftmaxGemmPermuteTunableOp<HipT>;
 
+  bool has_attn_bias = relative_position_bias != nullptr;
   size_t qkv_project_output_bytes = QkvProjectGeneric::GetOutputNumBytes(&attn);
   size_t attention_workspace_bytes = std::max(AttentionGeneric::GetWorkspaceNumBytes(&attn),
-                                              AttentionTunableOp::GetWorkspaceNumBytes(&attn));
+                                              AttentionTunableOp::GetWorkspaceNumBytes(&attn, has_attn_bias));
   ORT_ENFORCE(QkvProjectGeneric::GetWorkspaceNumBytes(&attn) <= attention_workspace_bytes); // workspace reuse
 
   auto qkv_project_output = GetScratchBuffer<void>(qkv_project_output_bytes, context->GetComputeStream());

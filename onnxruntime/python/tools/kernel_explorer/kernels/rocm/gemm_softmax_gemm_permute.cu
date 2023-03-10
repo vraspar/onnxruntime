@@ -171,7 +171,7 @@ class GemmSoftmaxGemmPermuteCK : public IGemmSoftmaxGemmPermuteKernelExplorer<T>
       DeviceArray& out)
       : IGemmSoftmaxGemmPermuteKernelExplorer<T>(batch, seqlen, total_seqlen, num_heads, head_size, mask_dim, scale,
                                                  Q, K, V, attn_bias, attn_mask, out) {
-    this->SetWorkspace(GemmSoftmaxGemmPermuteTunableOp<T>::GetWorkspaceNumBytes(&this->attn_));
+    this->SetWorkspace(GemmSoftmaxGemmPermuteTunableOp<T>::GetWorkspaceNumBytes(&this->attn_, attn_bias.has_value()));
 
     for (auto&& [ts, op] : GetCKGemmSoftmaxGemmPermuteTypeStringAndOps<T, USE_BIAS, USE_MASK>()) {
       type_strings_.emplace_back(std::move(ts));
@@ -230,7 +230,7 @@ class GemmSoftmaxGemmPermuteTunable : public IGemmSoftmaxGemmPermuteKernelExplor
                                                  Q, K, V, attn_bias, attn_mask, out) {
     this->SetWorkspace(std::max(
         GemmSoftmaxGemmPermuteGenericPipeline<T>::GetWorkspaceNumBytes(&this->attn_),
-        GemmSoftmaxGemmPermuteTunableOp<T>::GetWorkspaceNumBytes(&this->attn_)));
+        GemmSoftmaxGemmPermuteTunableOp<T>::GetWorkspaceNumBytes(&this->attn_, attn_bias.has_value())));
 
     this->params_.TuningContext()->EnableTunableOp();
   }
