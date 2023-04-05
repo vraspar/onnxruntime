@@ -41,9 +41,9 @@ for PYTHON_EXE in "${PYTHON_EXES[@]}"
 do
   ${PYTHON_EXE} -m pip install -r ${0/%install_deps_aten\.sh/requirements\.txt}
   if ! [[ ${PYTHON_EXE} = "/opt/python/cp310-cp310/bin/python3.10" ]]; then
-    ${PYTHON_EXE} -m pip install -r ${0/%install_deps_aten\.sh/..\/training\/ortmodule\/stage1\/requirements_torch_cpu\/requirements.txt}
+    ${PYTHON_EXE} -m pip install -r ${0/%install_deps_aten\.sh/..\/training\/ortmodule\/requirements_torch_cpu\/requirements.txt}
   else
-    ${PYTHON_EXE} -m pip install torch==1.13.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+    ${PYTHON_EXE} -m pip install torch==2.0.0+cpu -f https://download.pytorch.org/whl/torch_stable.html
   fi
 done
 
