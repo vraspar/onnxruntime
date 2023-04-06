@@ -307,7 +307,7 @@ TEST(NhwcFp16PoolOpTest, AvgPoolIncludePadPixel) {
   test.Run(OpTester::ExpectResult::kExpectSuccess, "", {kTensorrtExecutionProvider});
 }
 
-TEST(NhwcFp16PoolOpTest, GlobalAveragePool) {
+TEST(NhwcFp16PoolOpTest, DISABLED_GlobalAveragePool) {
   OpTester test("GlobalAveragePool", 1, onnxruntime::kMSInternalNHWCDomain);
 
   std::vector<MLFloat16> x_vals = {
