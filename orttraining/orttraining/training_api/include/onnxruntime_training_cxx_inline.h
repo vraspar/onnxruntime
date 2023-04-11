@@ -82,16 +82,21 @@ inline void TrainingSession::OptimizerStep() {
   ThrowOnError(GetTrainingApi().OptimizerStep(p_, run_options));
 }
 
+inline CheckpointState TrainingSession::GetState(const bool include_optimizer_state) {
+  OrtCheckpointState* state;
+  ThrowOnError(GetTrainingApi().GetState(p_, include_optimizer_state, &state));
+  return CheckpointState(state);
+}
+
 inline CheckpointState CheckpointState::LoadCheckpoint(const std::basic_string<ORTCHAR_T>& path_to_checkpoint) {
   OrtCheckpointState* checkpoint_state;
   ThrowOnError(GetTrainingApi().LoadCheckpoint(path_to_checkpoint.c_str(), &checkpoint_state));
   return CheckpointState(checkpoint_state);
 }
 
-inline void CheckpointState::SaveCheckpoint(const TrainingSession& session,
-                                            const std::basic_string<ORTCHAR_T>& path_to_checkpoint,
-                                            bool include_optimizer_states) {
-  ThrowOnError(GetTrainingApi().SaveCheckpoint(path_to_checkpoint.c_str(), session, include_optimizer_states));
+inline void CheckpointState::SaveCheckpoint(const CheckpointState& checkpoint_states,
+                                            const std::basic_string<ORTCHAR_T>& path_to_checkpoint) {
+  ThrowOnError(GetTrainingApi().SaveCheckpoint(checkpoint_states, path_to_checkpoint.c_str()));
 }
 
 inline void TrainingSession::ExportModelForInferencing(const std::basic_string<ORTCHAR_T>& inference_model_path,
@@ -107,6 +112,62 @@ inline void TrainingSession::ExportModelForInferencing(const std::basic_string<O
 
 inline void SetSeed(const int64_t seed) {
   ThrowOnError(GetTrainingApi().SetSeed(seed));
+}
+
+inline void CheckpointState::AddProperty(const std::basic_string<ORTCHAR_T>& property_name,
+                                         const Property& property_value) {
+  if (std::holds_alternative<int64_t>(property_value)) {
+    int64_t value = std::get<int64_t>(property_value);
+    void* value_p = &value;
+    ThrowOnError(GetTrainingApi().AddProperty(p_, property_name.c_str(), OrtPropertyType::OrtIntProperty, value_p));
+  } else if (std::holds_alternative<float>(property_value)) {
+    float value = std::get<float>(property_value);
+    void* value_p = &value;
+    ThrowOnError(GetTrainingApi().AddProperty(p_, property_name.c_str(), OrtPropertyType::OrtFloatProperty, value_p));
+  } else if (std::holds_alternative<std::string>(property_value)) {
+    std::string value = std::get<std::string>(property_value);
+    auto buffer = std::make_unique<char[]>(value.length() + 1).release();
+    memcpy(buffer, value.c_str(), value.length());
+    ThrowOnError(GetTrainingApi().AddProperty(p_, property_name.c_str(), OrtPropertyType::OrtStringProperty, buffer));
+  } else {
+    ThrowStatus(Status("Unknown property type received.", OrtErrorCode::ORT_INVALID_ARGUMENT));
+  }
+}
+
+inline Property CheckpointState::GetProperty(const std::basic_string<ORTCHAR_T>& property_name) {
+  void* property_value = nullptr;
+  OrtPropertyType property_type;
+
+  ThrowOnError(GetTrainingApi().GetProperty(p_, property_name.c_str(), &property_type, &property_value));
+
+  Property property;
+
+  switch (property_type) {
+    case OrtPropertyType::OrtIntProperty: {
+      auto value_p = reinterpret_cast<int64_t*>(property_value);
+      property = *value_p;
+      delete value_p;
+      break;
+    }
+    case OrtPropertyType::OrtFloatProperty: {
+      auto value_p = reinterpret_cast<float*>(property_value);
+      property = *value_p;
+      delete value_p;
+      break;
+    }
+    case OrtPropertyType::OrtStringProperty: {
+      auto value_p = reinterpret_cast<char*>(property_value);
+      property = std::string(value_p);
+      delete value_p;
+      break;
+    }
+    default: {
+      ThrowStatus(Status("Unknown property type received.", OrtErrorCode::ORT_INVALID_ARGUMENT));
+      break;
+    }
+  }
+
+  return property;
 }
 
 }  // namespace Ort

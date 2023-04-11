@@ -4,6 +4,7 @@
 #pragma once
 #include "onnxruntime_training_c_api.h"
 #include <optional>
+#include <variant>
 
 namespace Ort::detail {
 
@@ -36,15 +37,12 @@ ORT_DEFINE_TRAINING_RELEASE(TrainingSession);
 
 }  // namespace detail
 
-// TODO(bmeswani): remove forward declaration when the SaveCheckpoint no longer depends on TrainingSession
-class TrainingSession;
+using Property = std::variant<int64_t, float, std::string>;
 
 class CheckpointState : public detail::Base<OrtCheckpointState> {
- private:
+ public:
   CheckpointState(OrtCheckpointState* checkpoint_state) { p_ = checkpoint_state; }
 
- public:
-  // Construct the checkpoint state by loading the checkpoint by calling LoadCheckpoint
   CheckpointState() = delete;
 
   /** \brief Loads the checkpoint at provided path and returns the checkpoint state
@@ -59,8 +57,22 @@ class CheckpointState : public detail::Base<OrtCheckpointState> {
    * Wraps OrtTrainingApi::SaveCheckpoint
    *
    */
-  static void SaveCheckpoint(const TrainingSession& session, const std::basic_string<ORTCHAR_T>& path_to_checkpoint,
-                             bool include_optimizer_states);
+  static void SaveCheckpoint(const CheckpointState& checkpoint_state,
+                             const std::basic_string<ORTCHAR_T>& path_to_checkpoint);
+
+  /** \brief Adds the given property to the state.
+   *
+   * Wraps OrtTrainingApi::AddProperty
+   *
+   */
+  void AddProperty(const std::basic_string<ORTCHAR_T>& property_name, const Property& property_value);
+
+  /** \brief Gets the property associated with the given name from the state.
+   *
+   * Wraps OrtTrainingApi::GetProperty
+   *
+   */
+  Property GetProperty(const std::basic_string<ORTCHAR_T>& property_name);
 };
 
 /** \brief Manage the training loop using this class
@@ -151,8 +163,20 @@ class TrainingSession : public detail::Base<OrtTrainingSession> {
    */
   void ExportModelForInferencing(const std::basic_string<ORTCHAR_T>& inference_model_path,
                                  const std::vector<std::string>& graph_output_names);
+
+  /** \brief Gets the current training state of the session.
+   *
+   * Wraps OrtTrainingApi::GetState
+   *
+   */
+  CheckpointState GetState(const bool include_optimizer_state);
 };
 
+/** \brief Sets the given seed for random number generation.
+ *
+ * Wraps OrtTrainingApi::SetSeed
+ *
+ */
 void SetSeed(const int64_t seed);
 
 }  // namespace Ort

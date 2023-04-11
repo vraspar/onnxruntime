@@ -77,6 +77,14 @@ struct PropertyBag {
   InlinedHashMap<std::string, PropertyDataType> named_properties_;
 };
 
+template <>
+inline PropertyDataType PropertyBag::GetProperty<PropertyDataType>(const std::string& name) const {
+  auto it = named_properties_.find(name);
+  ORT_ENFORCE(it != named_properties_.end(), "No property named ", name);
+
+  return it->second;
+}
+
 }  // namespace api
 }  // namespace training
 }  // namespace onnxruntime
