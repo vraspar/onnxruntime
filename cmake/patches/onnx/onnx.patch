@@ -154,10 +154,10 @@ index fffaf3b7..ff573012 100644
  #include "onnx/common/common.h"
  #include "onnx/common/constants.h"
 diff --git a/onnx/onnx_pb.h b/onnx/onnx_pb.h
-index 0aab3e26..d2337523 100644
+index 0aab3e26..36f07f85 100644
 --- a/onnx/onnx_pb.h
 +++ b/onnx/onnx_pb.h
-@@ -47,10 +47,28 @@
+@@ -47,10 +47,30 @@
  #define ONNX_API ONNX_IMPORT
  #endif
  
@@ -168,6 +168,8 @@ index 0aab3e26..d2337523 100644
 +#pragma GCC diagnostic ignored "-Wunused-parameter"
 +#elif defined(_MSC_VER)
 +#pragma warning(push)
++// include\google/protobuf/port.h(96,68): warning C4100: 'context': unreferenced formal parameter
++#pragma warning(disable : 4100)
 +#pragma warning(disable : 4146)
 +#pragma warning(disable : 4127)
 +#pragma warning(disable : 4267)
