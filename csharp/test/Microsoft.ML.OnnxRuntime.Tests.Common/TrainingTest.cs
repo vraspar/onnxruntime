@@ -23,7 +23,7 @@ namespace Microsoft.ML.OnnxRuntime.Tests
             this.output = o;
         }
 
-#if !__TRAINING_ENABLED_NATIVE_BUILD__
+#if __TRAINING_ENABLED_NATIVE_BUILD__
         [Fact(DisplayName = "TestLoadCheckpointThrows")]
         public void TestLoadCheckpointThrows()
         {
@@ -33,7 +33,7 @@ namespace Microsoft.ML.OnnxRuntime.Tests
         }
 #endif
 
-#if __TRAINING_ENABLED_NATIVE_BUILD__
+#if !__TRAINING_ENABLED_NATIVE_BUILD__
         [Fact(DisplayName = "TestLoadCheckpoint")]
         public void TestLoadCheckpoint()
         {
@@ -176,7 +176,9 @@ namespace Microsoft.ML.OnnxRuntime.Tests
 
                 // Save checkpoint
                 string savedCheckpointPath = Path.Combine(Directory.GetCurrentDirectory(), "saved_checkpoint.ckpt");
-                trainingSession.SaveCheckpoint(savedCheckpointPath, false);
+                var new_state = trainingSession.GetState(true);
+                new_state.SaveCheckpoint(savedCheckpointPath);
+                cleanUp.Add(new_state);
 
                 // Load checkpoint and run train step
                 var loadedState = new CheckpointState(savedCheckpointPath);

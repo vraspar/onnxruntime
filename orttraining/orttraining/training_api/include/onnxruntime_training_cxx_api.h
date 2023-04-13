@@ -65,14 +65,14 @@ class CheckpointState : public detail::Base<OrtCheckpointState> {
    * Wraps OrtTrainingApi::AddProperty
    *
    */
-  void AddProperty(const std::basic_string<ORTCHAR_T>& property_name, const Property& property_value);
+  void AddProperty(const std::string& property_name, const Property& property_value);
 
   /** \brief Gets the property associated with the given name from the state.
    *
    * Wraps OrtTrainingApi::GetProperty
    *
    */
-  Property GetProperty(const std::basic_string<ORTCHAR_T>& property_name);
+  Property GetProperty(const std::string& property_name);
 };
 
 /** \brief Manage the training loop using this class

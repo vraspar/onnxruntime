@@ -404,10 +404,12 @@ ORT_API_STATUS_IMPL(OrtTrainingApis::TrainingSessionGetEvalModelInputName, _In_ 
 ORT_API_STATUS_IMPL(OrtTrainingApis::GetState, _In_ const OrtTrainingSession* sess, bool include_optimizer_state,
                     _Outptr_ OrtCheckpointState** checkpoint_state) {
   API_IMPL_BEGIN
+
+  *checkpoint_state = nullptr;
   auto session = reinterpret_cast<const onnxruntime::training::api::TrainingSession*>(sess);
-  auto chkpt_state = std::make_unique<onnxruntime::training::api::CheckpointState>();
+  auto chkpt_state = std::make_unique<onnxruntime::training::api::CheckpointState>().release();
   ORT_API_RETURN_IF_STATUS_NOT_OK(session->CreateCheckpointState(*chkpt_state, include_optimizer_state));
-  *checkpoint_state = reinterpret_cast<OrtCheckpointState*>(chkpt_state.release());
+  *checkpoint_state = reinterpret_cast<OrtCheckpointState*>(chkpt_state);
 
   return nullptr;
   API_IMPL_END
@@ -451,8 +453,8 @@ ORT_API_STATUS_IMPL(OrtTrainingApis::AddProperty, _Inout_ OrtCheckpointState* ch
 }
 
 ORT_API_STATUS_IMPL(OrtTrainingApis::GetProperty, _In_ const OrtCheckpointState* checkpoint_state,
-                    _In_ const char* property_name, _Out_ enum OrtPropertyType* property_type,
-                    _Outptr_ void** property_value) {
+                    _In_ const char* property_name, _Inout_ OrtAllocator* allocator,
+                    _Out_ enum OrtPropertyType* property_type, _Outptr_ void** property_value) {
   API_IMPL_BEGIN
 
   OrtStatus* status = nullptr;
@@ -464,9 +466,18 @@ ORT_API_STATUS_IMPL(OrtTrainingApis::GetProperty, _In_ const OrtCheckpointState*
   // The property_value is allocated on the heap. The user is expected to free up the memory as needed.
 
   if (std::holds_alternative<int64_t>(value)) {
-    auto value_p = std::make_unique<int64_t>(std::get<int64_t>(value)).release();
+    std::cout << "Hi 1\n";
+    int64_t* value_p = reinterpret_cast<int64_t*>(allocator->Alloc(allocator, sizeof(int64_t)));
+    if (!value_p) {
+      return OrtApis::CreateStatus(ORT_FAIL, "Property value buffer allocation failed.");
+    }
+    std::cout << "Hi 2\n";
+    *value_p = std::get<int64_t>(value);
+    std::cout << "Here is my value\n";
     *(reinterpret_cast<int64_t**>(property_value)) = value_p;
+    std::cout << "Hi 4\n";
     *property_type = OrtPropertyType::OrtIntProperty;
+    std::cout << "Hi 3\n";
   } else if (std::holds_alternative<float>(value)) {
     auto value_p = std::make_unique<float>(std::get<float>(value)).release();
     *(reinterpret_cast<float**>(property_value)) = value_p;

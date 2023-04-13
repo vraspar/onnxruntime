@@ -114,8 +114,7 @@ inline void SetSeed(const int64_t seed) {
   ThrowOnError(GetTrainingApi().SetSeed(seed));
 }
 
-inline void CheckpointState::AddProperty(const std::basic_string<ORTCHAR_T>& property_name,
-                                         const Property& property_value) {
+inline void CheckpointState::AddProperty(const std::string& property_name, const Property& property_value) {
   if (std::holds_alternative<int64_t>(property_value)) {
     int64_t value = std::get<int64_t>(property_value);
     void* value_p = &value;
@@ -134,11 +133,12 @@ inline void CheckpointState::AddProperty(const std::basic_string<ORTCHAR_T>& pro
   }
 }
 
-inline Property CheckpointState::GetProperty(const std::basic_string<ORTCHAR_T>& property_name) {
+inline Property CheckpointState::GetProperty(const std::string& property_name) {
   void* property_value = nullptr;
   OrtPropertyType property_type;
 
-  ThrowOnError(GetTrainingApi().GetProperty(p_, property_name.c_str(), &property_type, &property_value));
+  AllocatorWithDefaultOptions allocator;
+  ThrowOnError(GetTrainingApi().GetProperty(p_, property_name.c_str(), allocator, &property_type, &property_value));
 
   Property property;
 

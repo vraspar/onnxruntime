@@ -83,7 +83,7 @@ ORT_API_STATUS_IMPL(AddProperty, _Inout_ OrtCheckpointState* checkpoint_state,
                     _In_ void* property_value);
 
 ORT_API_STATUS_IMPL(GetProperty, _In_ const OrtCheckpointState* checkpoint_state,
-                    _In_ const char* property_name, _Out_ enum OrtPropertyType* property_type,
-                    _Out_ void** property_value);
+                    _In_ const char* property_name, _Inout_ OrtAllocator* allocator,
+                    _Out_ enum OrtPropertyType* property_type, _Out_ void** property_value);
 
 }  // namespace OrtTrainingApis

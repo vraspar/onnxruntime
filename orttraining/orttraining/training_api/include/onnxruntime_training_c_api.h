@@ -11,9 +11,9 @@ ORT_RUNTIME_CLASS(TrainingSession);  /// Type that enables performing training f
 ORT_RUNTIME_CLASS(CheckpointState);  /// Type that holds the training states for the training session.
 
 typedef enum OrtPropertyType {
-  OrtIntProperty,
-  OrtFloatProperty,
-  OrtStringProperty,
+  OrtIntProperty = 0,
+  OrtFloatProperty = 1,
+  OrtStringProperty = 2,
 } OrtPropertyType;
 
 struct OrtTrainingApi {
@@ -417,6 +417,7 @@ struct OrtTrainingApi {
    *
    * \param[in] checkpoint_state The checkpoint state that is currently holding the property.
    * \param[in] property_name Unique name of the property being retrieved.
+   * \param[in] allocator Allocator used to allocate the memory for the property_value.
    * \param[out] property_type Type of the property associated with the given name.
    * \param[out] property_value Property value associated with the given name.
    *
@@ -424,8 +425,8 @@ struct OrtTrainingApi {
    *
    */
   ORT_API2_STATUS(GetProperty, _In_ const OrtCheckpointState* checkpoint_state,
-                  _In_ const char* property_name, _Out_ enum OrtPropertyType* property_type,
-                  _Out_ void** property_value);
+                  _In_ const char* property_name, _Inout_ OrtAllocator* allocator,
+                  _Out_ enum OrtPropertyType* property_type, _Out_ void** property_value);
 };
 
 typedef struct OrtTrainingApi OrtTrainingApi;
