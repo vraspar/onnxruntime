@@ -347,14 +347,14 @@ function Install-Pybind {
     $msbuild_args = "-nodeReuse:false", "-nologo", "-nr:false", "-maxcpucount", "-p:UseMultiToolTask=true", "-p:configuration=`"$build_config`""
 
     if ($use_cache) {
-      $msbuild_args += "/p:CLToolExe=cl.exe /p:CLToolPath=C:\ProgramData\chocolatey\bin /p:TrackFileAccess=false /p:UseMultiToolTask=true"
+      $msbuild_args += "/p:CLToolExe=cl.exe", "/p:CLToolPath=C:\ProgramData\chocolatey\bin", "/p:TrackFileAccess=false", "/p:UseMultiToolTask=true"
     }
 
     $final_args = $msbuild_args + "pybind11.sln"
     &$msbuild_path $final_args
-	$final_args = $msbuild_args + "INSTALL.vcxproj"
-	&$msbuild_path $final_args
-	   
+    $final_args = $msbuild_args + "INSTALL.vcxproj"
+    &$msbuild_path $final_args
+       
     Write-Host "Installing pybind finished."
 
     popd
@@ -394,22 +394,22 @@ function Install-Abseil {
     }
     cd $absl_src_dir
     cd *
-	
-	# Search patch.exe
-	$patch_path = 'C:\Program Files\Git\usr\bin\patch.exe'
-	if(-not (Test-Path $patch_path -PathType Leaf)){
+    
+    # Search patch.exe
+    $patch_path = 'C:\Program Files\Git\usr\bin\patch.exe'
+    if(-not (Test-Path $patch_path -PathType Leaf)){
       $git_command_path = (Get-Command -CommandType Application git)[0].Path
       Write-Host "Git command path:$git_command_path"
       $git_installation_folder = Split-Path -Path (Split-Path -Path $git_command_path)
       $patch_path = Join-Path -Path $git_installation_folder "usr\bin\patch.exe"
-	}
+    }
     if(Test-Path $patch_path -PathType Leaf){
       Write-Host "Patching abseil ..."
       Get-Content $src_root\cmake\patches\abseil\absl_windows.patch | &$patch_path --ignore-whitespace -p1
     } else {
       Write-Host "Skip patching abseil since we cannot find patch.exe at $patch_path"
     }
-	
+    
     # Run cmake to generate Visual Studio sln file
     [string[]]$cmake_args = ".", "-DABSL_PROPAGATE_CXX_STD=ON", "-DCMAKE_BUILD_TYPE=$build_config", "-DBUILD_TESTING=OFF", "-DABSL_USE_EXTERNAL_GOOGLETEST=ON", "-DCMAKE_PREFIX_PATH=$install_prefix",  "-DCMAKE_INSTALL_PREFIX=$install_prefix"
     $cmake_args += $cmake_extra_args
@@ -424,15 +424,20 @@ function Install-Abseil {
     $msbuild_args = "-nodeReuse:false", "-nologo", "-nr:false", "-maxcpucount", "-p:UseMultiToolTask=true", "-p:configuration=`"$build_config`""
 
     if ($use_cache) {
-      $msbuild_args += "/p:CLToolExe=cl.exe /p:CLToolPath=C:\ProgramData\chocolatey\bin /p:TrackFileAccess=false /p:UseMultiToolTask=true"
+      $msbuild_args += "/p:CLToolExe=cl.exe", "/p:CLToolPath=C:\ProgramData\chocolatey\bin", "/p:TrackFileAccess=false", "/p:UseMultiToolTask=true"
     }
 
 
     $final_args = $msbuild_args + "absl.sln"
     &$msbuild_path $final_args
-	$final_args = $msbuild_args + "INSTALL.vcxproj"
-	&$msbuild_path $final_args
-    
+    if ($lastExitCode -ne 0) {
+      exit $lastExitCode
+    }
+    $final_args = $msbuild_args + "INSTALL.vcxproj"
+    &$msbuild_path $final_args
+    if ($lastExitCode -ne 0) {
+      exit $lastExitCode
+    }
     Write-Host "Installing absl finished."
     popd
 }
@@ -473,14 +478,14 @@ function Install-Protobuf {
     }
     cd $protobuf_src_dir
     cd *
-	# Search patch.exe
-	$patch_path = 'C:\Program Files\Git\usr\bin\patch.exe'
-	if(-not (Test-Path $patch_path -PathType Leaf)){
+    # Search patch.exe
+    $patch_path = 'C:\Program Files\Git\usr\bin\patch.exe'
+    if(-not (Test-Path $patch_path -PathType Leaf)){
       $git_command_path = (Get-Command -CommandType Application git)[0].Path
       Write-Host "Git command path:$git_command_path"
       $git_installation_folder = Split-Path -Path (Split-Path -Path $git_command_path)
       $patch_path = Join-Path -Path $git_installation_folder "usr\bin\patch.exe"
-	}
+    }
     if(Test-Path $patch_path -PathType Leaf){
       Write-Host "Patching protobuf ..."
       Get-Content $src_root\cmake\patches\protobuf\protobuf_cmake.patch | &$patch_path --ignore-whitespace -p1
@@ -502,13 +507,19 @@ function Install-Protobuf {
     $msbuild_args = "-nodeReuse:false", "-nologo", "-nr:false", "-maxcpucount", "-p:UseMultiToolTask=true", "-p:configuration=`"$build_config`""
 
     if ($use_cache) {
-      $msbuild_args += "/p:CLToolExe=cl.exe /p:CLToolPath=C:\ProgramData\chocolatey\bin /p:TrackFileAccess=false /p:UseMultiToolTask=true"
+      $msbuild_args += "/p:CLToolExe=cl.exe", "/p:CLToolPath=C:\ProgramData\chocolatey\bin", "/p:TrackFileAccess=false", "/p:UseMultiToolTask=true"
     }
 
     $final_args = $msbuild_args + "protobuf.sln"
     &$msbuild_path $final_args
-	$final_args = $msbuild_args + "INSTALL.vcxproj"
-	&$msbuild_path $final_args
+    if ($lastExitCode -ne 0) {
+      exit $lastExitCode
+    }
+    $final_args = $msbuild_args + "INSTALL.vcxproj"
+    &$msbuild_path $final_args
+    if ($lastExitCode -ne 0) {
+      exit $lastExitCode
+    }
     Write-Host "Installing protobuf finished."
     popd
 }
@@ -530,7 +541,7 @@ function Install-ONNX {
 
     Write-Host "Uninstalling onnx and ignore errors if there is any..."
     python.exe -m pip uninstall -y onnx -qq
-	
+    
     Write-Host "Installing python packages..."
     $p = Start-Process -NoNewWindow -Wait -PassThru -FilePath "python.exe" -ArgumentList "-m", "pip", "install", "--disable-pip-version-check", "setuptools", "wheel", "numpy", "protobuf==$protobuf_version"
     $exitCode = $p.ExitCode
@@ -549,14 +560,14 @@ function Install-ONNX {
     cd $onnx_src_dir
     cd *
 
-	# Search patch.exe
-	$patch_path = 'C:\Program Files\Git\usr\bin\patch.exe'
-	if(-not (Test-Path $patch_path -PathType Leaf)){
+    # Search patch.exe
+    $patch_path = 'C:\Program Files\Git\usr\bin\patch.exe'
+    if(-not (Test-Path $patch_path -PathType Leaf)){
       $git_command_path = (Get-Command -CommandType Application git)[0].Path
       Write-Host "Git command path:$git_command_path"
       $git_installation_folder = Split-Path -Path (Split-Path -Path $git_command_path)
       $patch_path = Join-Path -Path $git_installation_folder "usr\bin\patch.exe"
-	}
+    }
     if(Test-Path $patch_path -PathType Leaf){
       Write-Host "Patching onnx ..."
       Get-Content $src_root\cmake\patches\onnx\onnx.patch | &$patch_path --ignore-whitespace -p1
@@ -580,7 +591,7 @@ function Install-ONNX {
     if($build_config -eq 'Debug'){
        $Env:DEBUG='1'
     }
-    $Env:CMAKE_ARGS="-DONNX_USE_PROTOBUF_SHARED_LIBS=OFF -DProtobuf_USE_STATIC_LIBS=ON -DONNX_USE_LITE_PROTO=OFF -DCMAKE_INSTALL_PREFIX=$install_prefix"
+    $Env:CMAKE_ARGS="-DONNX_USE_PROTOBUF_SHARED_LIBS=OFF -DProtobuf_USE_STATIC_LIBS=ON -DONNX_USE_LITE_PROTO=OFF -DCMAKE_PREFIX_PATH=$install_prefix"
 
     python.exe "setup.py" "bdist_wheel"
     
