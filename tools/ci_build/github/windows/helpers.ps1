@@ -444,6 +444,74 @@ function Install-Abseil {
 
 <#
     .Description
+    The Install-UTF8-Range function installs Google's utf8_range library from source.
+    utf8_range depends on Abseil.
+	
+    .PARAMETER cmake_path
+    The full path of cmake.exe
+
+    .PARAMETER src_root
+    The full path of ONNX Runtime's top level source diretory
+
+    .PARAMETER build_config
+    The value of CMAKE_BUILD_TYPE, can be Debug, Release, RelWithDebInfo or MinSizeRel.
+#>
+function Install-UTF8-Range {
+
+    param (
+        [Parameter(Mandatory)][string]$cmake_path,
+        [Parameter(Mandatory)][string]$msbuild_path,
+        [Parameter(Mandatory)][string]$src_root,
+        [Parameter(Mandatory)][CMakeBuildType]$build_config,
+        [Parameter(Mandatory)][string[]]$cmake_extra_args
+    )
+
+    pushd .
+    $url=Get-DownloadURL -name utf8_range -src_root $src_root
+    Write-Host "Downloading utf8_range from $url"
+    $temp_dir = Get-TempDirectory
+    $absl_src_dir = Join-Path $temp_dir "utf8_range"
+    $download_finished = DownloadAndExtract -Uri $url -InstallDirectory $absl_src_dir -Force
+    if(-Not $download_finished){
+        exit 1
+    }
+    cd $absl_src_dir
+    cd *
+
+    # Run cmake to generate Visual Studio sln file
+    [string[]]$cmake_args = ".", "-Dutf8_range_ENABLE_TESTS=OFF", "-Dutf8_range_ENABLE_INSTALL=ON", "-DCMAKE_BUILD_TYPE=$build_config", "-DBUILD_TESTING=OFF", "-DCMAKE_PREFIX_PATH=$install_prefix",  "-DCMAKE_INSTALL_PREFIX=$install_prefix"
+    $cmake_args += $cmake_extra_args
+
+    $p = Start-Process -FilePath $cmake_path -ArgumentList $cmake_args -NoNewWindow -Wait -PassThru
+    $exitCode = $p.ExitCode
+    if ($exitCode -ne 0) {
+        Write-Host -Object "CMake command failed. Exitcode: $exitCode"
+        exit $exitCode
+    }
+
+    $msbuild_args = "-nodeReuse:false", "-nologo", "-nr:false", "-maxcpucount", "-p:UseMultiToolTask=true", "-p:configuration=`"$build_config`""
+
+    if ($use_cache) {
+      $msbuild_args += "/p:CLToolExe=cl.exe", "/p:CLToolPath=C:\ProgramData\chocolatey\bin", "/p:TrackFileAccess=false", "/p:UseMultiToolTask=true"
+    }
+
+
+    $final_args = $msbuild_args + "utf8_range.sln"
+    &$msbuild_path $final_args
+    if ($lastExitCode -ne 0) {
+      exit $lastExitCode
+    }
+    $final_args = $msbuild_args + "INSTALL.vcxproj"
+    &$msbuild_path $final_args
+    if ($lastExitCode -ne 0) {
+      exit $lastExitCode
+    }
+    Write-Host "Installing utf8_range finished."
+    popd
+}
+
+<#
+    .Description
     The Install-ONNX function installs ONNX python package from source and also the python packages that it depends on.
     This script will build protobuf C/C++ lib/exe for the CPU arch of the current build machine, because we need to run
     protoc.exe on this machine.
@@ -494,7 +562,7 @@ function Install-Protobuf {
     }
 
     # Run cmake to generate Visual Studio sln file
-    [string[]]$cmake_args = ".", "-Dprotobuf_DISABLE_RTTI=ON", "-DCMAKE_BUILD_TYPE=$build_config", "-Dprotobuf_BUILD_TESTS=OFF", "-DBUILD_SHARED_LIBS=OFF", "-DCMAKE_PREFIX_PATH=$install_prefix",  "-DCMAKE_INSTALL_PREFIX=$install_prefix", "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF", "-Dprotobuf_ABSL_PROVIDER=package"
+    [string[]]$cmake_args = ".", "-Dprotobuf_DISABLE_RTTI=ON", "-DCMAKE_BUILD_TYPE=$build_config", "-Dprotobuf_BUILD_TESTS=OFF", "-Dprotobuf_USE_EXTERNAL_GTEST=ON", "-DBUILD_SHARED_LIBS=OFF", "-DCMAKE_PREFIX_PATH=$install_prefix",  "-DCMAKE_INSTALL_PREFIX=$install_prefix", "-Dprotobuf_MSVC_STATIC_RUNTIME=OFF", "-Dprotobuf_ABSL_PROVIDER=package"
     $cmake_args += $cmake_extra_args
 
     $p = Start-Process -FilePath $cmake_path -ArgumentList $cmake_args -NoNewWindow -Wait -PassThru

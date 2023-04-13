@@ -97,6 +97,8 @@ Install-Pybind -cmake_path $cmake_path -src_root $ort_src_root -build_config $bu
 
 Install-Abseil -cmake_path $cmake_path -src_root $ort_src_root -build_config $build_config -cmake_extra_args $cmake_extra_args -msbuild_path $msbuild_path
 
+Install-UTF8-Range -cmake_path $cmake_path -src_root $ort_src_root -build_config $build_config -cmake_extra_args $cmake_extra_args -msbuild_path $msbuild_path
+
 Install-Protobuf -cmake_path $cmake_path -src_root $ort_src_root -build_config $build_config -cmake_extra_args $cmake_extra_args -msbuild_path $msbuild_path
 
 $protobuf_version="4.22.3"
