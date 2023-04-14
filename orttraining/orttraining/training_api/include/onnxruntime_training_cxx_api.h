@@ -39,6 +39,11 @@ ORT_DEFINE_TRAINING_RELEASE(TrainingSession);
 
 using Property = std::variant<int64_t, float, std::string>;
 
+/** \brief Class that holds the state of the training session state
+ *
+ * Wraps OrtCheckpointState
+ *
+ */
 class CheckpointState : public detail::Base<OrtCheckpointState> {
  public:
   CheckpointState(OrtCheckpointState* checkpoint_state) { p_ = checkpoint_state; }
@@ -49,6 +54,8 @@ class CheckpointState : public detail::Base<OrtCheckpointState> {
    *
    * Wraps OrtTrainingApi::LoadCheckpoint
    *
+   * \param[in] path_to_checkpoint Path to the checkpoint file to load
+   * \return CheckpointState object which holds the state of the training session parameters.
    */
   static CheckpointState LoadCheckpoint(const std::basic_string<ORTCHAR_T>& path_to_checkpoint);
 
@@ -56,6 +63,8 @@ class CheckpointState : public detail::Base<OrtCheckpointState> {
    *
    * Wraps OrtTrainingApi::SaveCheckpoint
    *
+   * \param[in] checkpoint_state Training session checkpoint state to save to the checkpoint file
+   * \param[in] path_to_checkpoint Path to the checkpoint file to load
    */
   static void SaveCheckpoint(const CheckpointState& checkpoint_state,
                              const std::basic_string<ORTCHAR_T>& path_to_checkpoint);
@@ -64,6 +73,8 @@ class CheckpointState : public detail::Base<OrtCheckpointState> {
    *
    * Wraps OrtTrainingApi::AddProperty
    *
+   * \param[in] property_name Name of the property to add to the state.
+   * \param[in] property_value Value of the property to add to the state.
    */
   void AddProperty(const std::string& property_name, const Property& property_value);
 
@@ -71,11 +82,14 @@ class CheckpointState : public detail::Base<OrtCheckpointState> {
    *
    * Wraps OrtTrainingApi::GetProperty
    *
+   * \param[in] property_name Name of the property to get from the state.
+   * \return Property value associated with the property name.
    */
   Property GetProperty(const std::string& property_name);
 };
 
-/** \brief Manage the training loop using this class
+/** \brief Trainer class that provides training, evaluation and optimizer methods for
+ *         executing ONNX models.
  *
  * Wraps OrtTrainingSession
  *
@@ -160,6 +174,8 @@ class TrainingSession : public detail::Base<OrtTrainingSession> {
    *
    * Wraps OrtTrainingApi::ExportModelForInferencing
    *
+   * \param[in] inference_model_path Path to a location where the inference ready onnx model should be saved to.
+   * \param[in] graph_output_names Vector of output names that the inference model should have.
    */
   void ExportModelForInferencing(const std::basic_string<ORTCHAR_T>& inference_model_path,
                                  const std::vector<std::string>& graph_output_names);
@@ -168,14 +184,59 @@ class TrainingSession : public detail::Base<OrtTrainingSession> {
    *
    * Wraps OrtTrainingApi::GetState
    *
+   * \param[in] include_optimizer_state Whether or not to include the optimizer state in the returned state.
+   * \return A CheckpointState object that includes all training session parameters' state.
    */
   CheckpointState GetState(const bool include_optimizer_state);
+
+  /** \brief Gets the graph input names.
+   *
+   * Wraps OrtTrainingApi::TrainingSessionGetTrainingModelInputName,
+   * OrtTrainingApi::TrainingSessionGetEvalModelInputName,
+   * OrtTrainingApi::TrainingSessionGetTrainingModelInputCount
+   * OrtTrainingApi::TrainingSessionGetEvalModelInputCount
+   *
+   * \param[in] training Whether the training model input names are requested or eval model input names.
+   * \return Graph input names for either the training model or the eval model.
+   *
+   */
+  std::vector<std::string> InputNames(const bool training);
+
+  /** \brief Gets the graph output names.
+   *
+   * Wraps OrtTrainingApi::TrainingSessionGetTrainingModelOutputName,
+   * OrtTrainingApi::TrainingSessionGetEvalModelOutputName,
+   * OrtTrainingApi::TrainingSessionGetTrainingModelOutputCount
+   * OrtTrainingApi::TrainingSessionGetEvalModelOutputCount
+   *
+   * \param[in] training Whether the training model output names are requested or eval model output names.
+   * \return Graph output names for either the training model or the eval model.
+   */
+  std::vector<std::string> OutputNames(const bool training);
+
+  /** \brief Copies the training session model parameters to a contiguous buffer
+   *
+   * Wraps OrtTrainingApi::CopyParametersToBuffer
+   *
+   * \param[in] only_trainable Whether to only copy trainable parameters or to copy all parameters.
+   * \return Contiguous buffer to the model parameters.
+   */
+  Value ToBuffer(const bool only_trainable);
+
+  /** \brief Loads the training session model parameters from a contiguous buffer
+   *
+   * Wraps OrtTrainingApi::CopyBufferToParameters
+   *
+   * \param[in] buffer Contiguous buffer to load the parameters from.
+   */
+  void FromBuffer(Value& buffer);
 };
 
 /** \brief Sets the given seed for random number generation.
  *
  * Wraps OrtTrainingApi::SetSeed
  *
+ * \param[in] seed Manual seed to use for random number generation.
  */
 void SetSeed(const int64_t seed);
 

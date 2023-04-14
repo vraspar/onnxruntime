@@ -88,6 +88,94 @@ inline CheckpointState TrainingSession::GetState(const bool include_optimizer_st
   return CheckpointState(state);
 }
 
+inline std::vector<std::string> TrainingSession::InputNames(const bool training) {
+  auto& input_count_function = training ? GetTrainingApi().TrainingSessionGetTrainingModelInputCount
+                                        : GetTrainingApi().TrainingSessionGetEvalModelInputCount;
+  auto& input_name_function = training ? GetTrainingApi().TrainingSessionGetTrainingModelInputName
+                                       : GetTrainingApi().TrainingSessionGetEvalModelInputName;
+
+  size_t input_count = 0;
+  ThrowOnError(input_count_function(p_, &input_count));
+  std::vector<std::string> input_names(input_count);
+  AllocatorWithDefaultOptions allocator;
+  for (size_t index = 0; index < input_count; ++index) {
+    char* input_name;
+    ThrowOnError(input_name_function(p_, index, allocator, &input_name));
+    input_names[index] = std::string(input_name);
+    allocator.Free(input_name);
+  }
+
+  return input_names;
+}
+
+inline std::vector<std::string> TrainingSession::OutputNames(const bool training) {
+  auto& output_count_function = training ? GetTrainingApi().TrainingSessionGetTrainingModelOutputCount
+                                         : GetTrainingApi().TrainingSessionGetEvalModelOutputCount;
+  auto& output_name_function = training ? GetTrainingApi().TrainingSessionGetTrainingModelOutputName
+                                        : GetTrainingApi().TrainingSessionGetEvalModelOutputName;
+
+  size_t output_count = 0;
+  ThrowOnError(output_count_function(p_, &output_count));
+  std::vector<std::string> output_names(output_count);
+  AllocatorWithDefaultOptions allocator;
+  for (size_t index = 0; index < output_count; ++index) {
+    char* output_name;
+    ThrowOnError(output_name_function(p_, index, allocator, &output_name));
+    output_names[index] = std::string(output_name);
+    allocator.Free(output_name);
+  }
+
+  return output_names;
+}
+
+inline Value TrainingSession::ToBuffer(const bool only_trainable) {
+  size_t buffer_size = 0U;
+  ThrowOnError(GetTrainingApi().GetParametersSize(p_, &buffer_size, only_trainable));
+
+  std::array<int64_t, 1> buffer_shape{static_cast<int64_t>(buffer_size)};
+
+  AllocatorWithDefaultOptions allocator;
+  Value buffer = Value::CreateTensor(allocator, buffer_shape.data(), 1U,
+                                     ONNXTensorElementDataType::ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT);
+
+  ThrowOnError(GetTrainingApi().CopyParametersToBuffer(p_, buffer, only_trainable));
+
+  return buffer;
+}
+
+inline void TrainingSession::FromBuffer(Value& buffer) {
+  if (!buffer.IsTensor()) {
+    ThrowStatus(Status("Incorrect buffer received. Expected a tensor buffer.", OrtErrorCode::ORT_INVALID_ARGUMENT));
+  }
+
+  auto tensor_info = buffer.GetTensorTypeAndShapeInfo();
+  auto buffer_shape = tensor_info.GetShape();
+
+  if (buffer_shape.size() != 1U) {
+    ThrowStatus(Status("Incorrect buffer received. Expected a contiguous tensor buffer.",
+                       OrtErrorCode::ORT_INVALID_ARGUMENT));
+  }
+
+  auto buffer_size = buffer_shape.front();
+
+  size_t session_buffer_size_trainable_only = 0U;
+  ThrowOnError(GetTrainingApi().GetParametersSize(p_, &session_buffer_size_trainable_only, true));
+
+  if (buffer_size == static_cast<int64_t>(session_buffer_size_trainable_only)) {
+    ThrowOnError(GetTrainingApi().CopyBufferToParameters(p_, buffer, true));
+    return;
+  }
+
+  size_t session_buffer_size = 0U;
+  ThrowOnError(GetTrainingApi().GetParametersSize(p_, &session_buffer_size, false));
+
+  if (buffer_size != static_cast<int64_t>(session_buffer_size)) {
+    ThrowStatus(Status("Incorrect buffer size received.", OrtErrorCode::ORT_INVALID_ARGUMENT));
+  }
+
+  ThrowOnError(GetTrainingApi().CopyBufferToParameters(p_, buffer, false));
+}
+
 inline CheckpointState CheckpointState::LoadCheckpoint(const std::basic_string<ORTCHAR_T>& path_to_checkpoint) {
   OrtCheckpointState* checkpoint_state;
   ThrowOnError(GetTrainingApi().LoadCheckpoint(path_to_checkpoint.c_str(), &checkpoint_state));
@@ -146,19 +234,19 @@ inline Property CheckpointState::GetProperty(const std::string& property_name) {
     case OrtPropertyType::OrtIntProperty: {
       auto value_p = reinterpret_cast<int64_t*>(property_value);
       property = *value_p;
-      delete value_p;
+      allocator.Free(property_value);
       break;
     }
     case OrtPropertyType::OrtFloatProperty: {
       auto value_p = reinterpret_cast<float*>(property_value);
       property = *value_p;
-      delete value_p;
+      allocator.Free(property_value);
       break;
     }
     case OrtPropertyType::OrtStringProperty: {
       auto value_p = reinterpret_cast<char*>(property_value);
       property = std::string(value_p);
-      delete value_p;
+      allocator.Free(property_value);
       break;
     }
     default: {

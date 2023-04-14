@@ -463,30 +463,28 @@ ORT_API_STATUS_IMPL(OrtTrainingApis::GetProperty, _In_ const OrtCheckpointState*
   const auto value = chkpt_state->property_bag.GetProperty<
       onnxruntime::training::api::PropertyDataType>(property_name);
 
-  // The property_value is allocated on the heap. The user is expected to free up the memory as needed.
-
   if (std::holds_alternative<int64_t>(value)) {
-    std::cout << "Hi 1\n";
     int64_t* value_p = reinterpret_cast<int64_t*>(allocator->Alloc(allocator, sizeof(int64_t)));
     if (!value_p) {
-      return OrtApis::CreateStatus(ORT_FAIL, "Property value buffer allocation failed.");
+      return OrtApis::CreateStatus(ORT_FAIL, "Int property value buffer allocation failed.");
     }
-    std::cout << "Hi 2\n";
     *value_p = std::get<int64_t>(value);
-    std::cout << "Here is my value\n";
     *(reinterpret_cast<int64_t**>(property_value)) = value_p;
-    std::cout << "Hi 4\n";
     *property_type = OrtPropertyType::OrtIntProperty;
-    std::cout << "Hi 3\n";
   } else if (std::holds_alternative<float>(value)) {
-    auto value_p = std::make_unique<float>(std::get<float>(value)).release();
+    float* value_p = reinterpret_cast<float*>(allocator->Alloc(allocator, sizeof(float)));
+    if (!value_p) {
+      return OrtApis::CreateStatus(ORT_FAIL, "Float property value buffer allocation failed.");
+    }
+    *value_p = std::get<float>(value);
     *(reinterpret_cast<float**>(property_value)) = value_p;
     *property_type = OrtPropertyType::OrtFloatProperty;
   } else if (std::holds_alternative<std::string>(value)) {
     auto property_value_str = std::get<std::string>(value);
     // property_value_str.length() + 1 for null termination of c strings
-    auto buffer = std::make_unique<char[]>(property_value_str.length() + 1).release();
+    auto buffer = reinterpret_cast<char*>(allocator->Alloc(allocator, property_value_str.length() + 1));
     memcpy(buffer, property_value_str.c_str(), property_value_str.length());
+    buffer[property_value_str.length()] = '\0';
     *(reinterpret_cast<char**>(property_value)) = buffer;
     *property_type = OrtPropertyType::OrtStringProperty;
   } else {

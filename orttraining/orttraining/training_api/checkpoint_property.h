@@ -64,6 +64,10 @@ struct PropertyBag {
     return named_properties_.size();
   }
 
+  bool HasProperty(const std::string& property_name) const {
+    return named_properties_.count(property_name);
+  }
+
  private:
   const InlinedVector<int32_t> supported_data_types{
       ONNX_NAMESPACE::TensorProto::FLOAT,

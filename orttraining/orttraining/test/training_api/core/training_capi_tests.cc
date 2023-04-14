@@ -9,6 +9,8 @@
 
 #include "orttraining/training_api/checkpoint.h"
 
+#include "orttraining/test/training_api/core/data_utils.h"
+
 namespace onnxruntime::training::test {
 
 #define MODEL_FOLDER ORT_TSTR("testdata/training_api/")
@@ -69,6 +71,66 @@ TEST(TrainingCApiTest, AddStringProperty) {
   auto property = checkpoint_state.GetProperty("framework");
 
   ASSERT_EQ(std::get<std::string>(property), value);
+}
+
+TEST(TrainingCApiTest, InputNames) {
+  auto model_uri = MODEL_FOLDER "training_model.onnx";
+
+  Ort::CheckpointState checkpoint_state = Ort::CheckpointState::LoadCheckpoint(MODEL_FOLDER "checkpoint.ckpt");
+  Ort::TrainingSession training_session = Ort::TrainingSession(Ort::SessionOptions(), checkpoint_state, model_uri);
+
+  const auto input_names = training_session.InputNames(true);
+  ASSERT_EQ(input_names.size(), 2U);
+  ASSERT_EQ(input_names.front(), "input-0");
+  ASSERT_EQ(input_names.back(), "labels");
+}
+
+TEST(TrainingCApiTest, OutputNames) {
+  auto model_uri = MODEL_FOLDER "training_model.onnx";
+
+  Ort::CheckpointState checkpoint_state = Ort::CheckpointState::LoadCheckpoint(MODEL_FOLDER "checkpoint.ckpt");
+  Ort::TrainingSession training_session = Ort::TrainingSession(Ort::SessionOptions(), checkpoint_state, model_uri);
+
+  const auto output_names = training_session.OutputNames(true);
+  ASSERT_EQ(output_names.size(), 1U);
+  ASSERT_EQ(output_names.front(), "onnx::loss::21273");
+}
+
+TEST(TrainingCApiTest, ToBuffer) {
+  auto model_uri = MODEL_FOLDER "training_model.onnx";
+
+  Ort::CheckpointState checkpoint_state = Ort::CheckpointState::LoadCheckpoint(MODEL_FOLDER "checkpoint.ckpt");
+  Ort::TrainingSession training_session = Ort::TrainingSession(Ort::SessionOptions(), checkpoint_state, model_uri);
+
+  Ort::Value buffer = training_session.ToBuffer(true);
+
+  ASSERT_TRUE(buffer.IsTensor());
+  auto tensor_info = buffer.GetTensorTypeAndShapeInfo();
+  auto shape = tensor_info.GetShape();
+  ASSERT_EQ(shape.size(), 1U);
+  ASSERT_EQ(shape.front(), static_cast<int64_t>(397510));
+
+  buffer = training_session.ToBuffer(false);
+
+  ASSERT_TRUE(buffer.IsTensor());
+  tensor_info = buffer.GetTensorTypeAndShapeInfo();
+  shape = tensor_info.GetShape();
+  ASSERT_EQ(shape.size(), 1U);
+  ASSERT_EQ(shape.front(), static_cast<int64_t>(397510));
+}
+
+TEST(TrainingCApiTest, FromBuffer) {
+  auto model_uri = MODEL_FOLDER "training_model.onnx";
+
+  Ort::CheckpointState checkpoint_state = Ort::CheckpointState::LoadCheckpoint(MODEL_FOLDER "checkpoint.ckpt");
+  Ort::TrainingSession training_session = Ort::TrainingSession(Ort::SessionOptions(), checkpoint_state, model_uri);
+
+  OrtValue* buffer_impl = std::make_unique<OrtValue>().release();
+  GenerateRandomInput(std::array<int64_t, 1>{397510}, *buffer_impl);
+
+  Ort::Value buffer(buffer_impl);
+
+  training_session.FromBuffer(buffer);
 }
 
 }  // namespace onnxruntime::training::test
