@@ -4,8 +4,13 @@ parameters:
   type: string
   default: ''
 
+- name: stage_name_suffix
+  displayName: job name for nuget
+  type: string
+  default: 'CPU'
+
 stages:
-- stage: Linux_C_API_Packaging_CPU
+- stage: Linux_C_API_Packaging_${{ parameters.stage_name_suffix }}
   dependsOn: [ ]
   jobs:
   - template: c-api-linux-cpu.yml

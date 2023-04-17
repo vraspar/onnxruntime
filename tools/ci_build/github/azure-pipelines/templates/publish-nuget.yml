@@ -81,6 +81,12 @@ stages:
     - task: DownloadPipelineArtifact@0
       displayName: 'Download Pipeline Artifact - Signed NuGet Package'
       inputs:
+        artifactName: 'drop-signed-nuget-Training-CPU'
+        targetPath: $(Build.BinariesDirectory)/nuget-artifact/final-package
+
+    - task: DownloadPipelineArtifact@0
+      displayName: 'Download Pipeline Artifact - Signed NuGet Package'
+      inputs:
         artifactName: 'drop-signed-nuget-GPU'
         targetPath: $(Build.BinariesDirectory)/nuget-artifact/final-package
 

@@ -1,8 +1,9 @@
 parameters:
   IsMacOS : 'true'
   ArtifactSuffix: ''
+  StageSuffix: 'CPU'
 stages:
-- stage: NuGet_Test_MacOS
+- stage: NuGet_Test_MacOS_${{ parameters.StageSuffix }}
   dependsOn:
   - NuGet_Packaging_${{ parameters.ArtifactSuffix }}
   condition: succeeded()

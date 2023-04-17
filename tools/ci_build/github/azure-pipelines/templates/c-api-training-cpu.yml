@@ -42,12 +42,13 @@ stages:
 - template: linux-cpu-packaging-pipeline.yml
   parameters:
     AdditionalBuildFlags: ${{ parameters.AdditionalBuildFlags }}
+    stage_name_suffix: Training_CPU
 
 - template: win-ci.yml
   parameters:
     DoCompliance: ${{ parameters.DoCompliance }}
     DoEsrp: ${{ parameters.DoEsrp }}
-    stage_name_suffix: CPU_x86_${{ parameters.BuildVariant }}
+    stage_name_suffix: Training_CPU_x86_${{ parameters.BuildVariant }}
     EnvSetupScript: setup_env_x86.bat
     buildArch: x86
     msbuildPlatform: Win32
@@ -61,7 +62,7 @@ stages:
   parameters:
     DoCompliance: ${{ parameters.DoCompliance }}
     DoEsrp: ${{ parameters.DoEsrp }}
-    stage_name_suffix: CPU_arm_${{ parameters.BuildVariant }}
+    stage_name_suffix: Training_CPU_arm_${{ parameters.BuildVariant }}
     EnvSetupScript: setup_env.bat
     buildArch: x64
     msbuildPlatform: arm
@@ -75,7 +76,7 @@ stages:
   parameters:
     DoCompliance: ${{ parameters.DoCompliance }}
     DoEsrp: ${{ parameters.DoEsrp }}
-    stage_name_suffix: CPU_arm64_${{ parameters.BuildVariant }}
+    stage_name_suffix: Training_CPU_arm64_${{ parameters.BuildVariant }}
     EnvSetupScript: setup_env.bat
     buildArch: x64
     msbuildPlatform: arm64
@@ -89,7 +90,7 @@ stages:
   parameters:
     DoCompliance: ${{ parameters.DoCompliance }}
     DoEsrp: ${{ parameters.DoEsrp }}
-    stage_name_suffix: CPU_x64_${{ parameters.BuildVariant }}
+    stage_name_suffix: Training_CPU_x64_${{ parameters.BuildVariant }}
     EnvSetupScript: setup_env.bat
     buildArch: x64
     msbuildPlatform: x64
@@ -104,16 +105,16 @@ stages:
     AllowReleasedOpsetOnly: 1
     BuildForAllArchs: true
     AdditionalBuildFlags: ${{ parameters.AdditionalBuildFlags }}
-
+    stage_name_suffix: Training_CPU
 
 - stage: NuGet_Packaging_CPU
   dependsOn:
-  - Linux_C_API_Packaging_CPU
-  - MacOS_C_API_Packaging_CPU
-  - Windows_Packaging_CPU_x86_${{ parameters.BuildVariant }}
-  - Windows_Packaging_CPU_x64_${{ parameters.BuildVariant }}
-  - Windows_Packaging_CPU_arm_${{ parameters.BuildVariant }}
-  - Windows_Packaging_CPU_arm64_${{ parameters.BuildVariant }}
+  - Linux_C_API_Packaging_Training_CPU
+  - MacOS_C_API_Packaging_Training_CPU
+  - Windows_Packaging_Training_CPU_x86_${{ parameters.BuildVariant }}
+  - Windows_Packaging_Training_CPU_x64_${{ parameters.BuildVariant }}
+  - Windows_Packaging_Training_CPU_arm_${{ parameters.BuildVariant }}
+  - Windows_Packaging_Training_CPU_arm64_${{ parameters.BuildVariant }}
   jobs:
   - job:
     workspace:
@@ -278,12 +279,12 @@ stages:
         Contents: '*.snupkg'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
-    # - task: CopyFiles@2
-    #   displayName: 'Copy managed nuget package to: $(Build.ArtifactStagingDirectory)'
-    #   inputs:
-    #     SourceFolder: '$(Build.SourcesDirectory)\csharp\src\Microsoft.ML.OnnxRuntime\bin\RelWithDebInfo'
-    #     Contents: '*.nupkg'
-    #     TargetFolder: '$(Build.ArtifactStagingDirectory)'
+    - task: CopyFiles@2
+      displayName: 'Copy managed nuget package to: $(Build.ArtifactStagingDirectory)'
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)\csharp\src\Microsoft.ML.OnnxRuntime\bin\RelWithDebInfo'
+        Contents: '*.nupkg'
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
     - template: esrp_nuget.yml
       parameters:
@@ -302,7 +303,7 @@ stages:
     - task: PublishPipelineArtifact@0
       displayName: 'Publish Pipeline NuGet Artifact'
       inputs:
-        artifactName: 'drop-signed-nuget-CPU'
+        artifactName: 'drop-signed-nuget-Training-CPU'
         targetPath: '$(Build.ArtifactStagingDirectory)'
 
 
@@ -335,15 +336,16 @@ stages:
     AgentPool : 'Win-CPU-2021'
     Skipx86Tests : false
     NugetPackageName : 'Microsoft.ML.OnnxRuntime.Training'
-    ArtifactSuffix: 'Training_CPU'
+    ArtifactSuffix: 'Training-CPU'
 
 - template: ../nuget/templates/test_linux.yml
   parameters:
     AgentPool : aiinfra-Linux-CPU
     NugetPackageName : 'Microsoft.ML.OnnxRuntime.Training'
-    ArtifactSuffix: 'Training_CPU'
+    ArtifactSuffix: 'Training-CPU'
 
 - template: ../nuget/templates/test_macos.yml
   parameters:
     AgentPool : macOS-12
-    ArtifactSuffix: 'Training_CPU'
+    ArtifactSuffix: 'Training-CPU'
+    StageSuffix: 'Training_CPU'
