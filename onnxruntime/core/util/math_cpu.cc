@@ -1,18 +1,18 @@
 /**
-* Copyright (c) 2016-present, Facebook, Inc.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*     http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright (c) 2016-present, Facebook, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 // Modifications Copyright (c) Microsoft.
 
 #include "core/util/math_cpuonly.h"
@@ -78,6 +78,90 @@ void Gemm<float, ThreadPool>(CBLAS_TRANSPOSE TransA, CBLAS_TRANSPOSE TransB, ptr
   int lda = static_cast<int>((TransA == CblasNoTrans) ? K : M);
   int ldb = static_cast<int>((TransB == CblasNoTrans) ? N : K);
   MlasGemm(TransA, TransB, M, N, K, alpha, A, lda, B, ldb, beta, C, N, threadpool);
+}
+
+template <>
+void Gemm<Eigen::half, ThreadPool>(CBLAS_TRANSPOSE TransA, CBLAS_TRANSPOSE TransB, ptrdiff_t M,
+                                   ptrdiff_t N, ptrdiff_t K, Eigen::half alpha, const Eigen::half* A, const Eigen::half* B, Eigen::half beta,
+                                   Eigen::half* C, ThreadPool*) {
+  auto C_mat = EigenMatrixMap<Eigen::half>(C, N, M);
+  if (beta == static_cast<Eigen::half>(0)) {
+    C_mat.setZero();
+  } else {
+    C_mat *= beta;
+  }
+  switch (TransA) {
+    case CblasNoTrans: {
+      switch (TransB) {
+        case CblasNoTrans:
+          C_mat.noalias() += alpha * (ConstEigenMatrixMap<Eigen::half>(B, N, K) *
+                                      ConstEigenMatrixMap<Eigen::half>(A, K, M));
+          return;
+        case CblasTrans:
+          C_mat.noalias() += alpha * (ConstEigenMatrixMap<Eigen::half>(B, K, N).transpose() *
+                                      ConstEigenMatrixMap<Eigen::half>(A, K, M));
+          return;
+        default:
+          ORT_THROW("CblasNoTrans Unexpected CBLAS_TRANSPOSE for TransB of ", TransB);
+      }
+    }
+    case CblasTrans: {
+      switch (TransB) {
+        case CblasNoTrans:
+          C_mat.noalias() += alpha * (ConstEigenMatrixMap<Eigen::half>(B, N, K) *
+                                      ConstEigenMatrixMap<Eigen::half>(A, M, K).transpose());
+          return;
+        case CblasTrans:
+          C_mat.noalias() += alpha * (ConstEigenMatrixMap<Eigen::half>(B, K, N).transpose() *
+                                      ConstEigenMatrixMap<Eigen::half>(A, M, K).transpose());
+          return;
+        default:
+          ORT_THROW("CblasTrans Unexpected CBLAS_TRANSPOSE for TransB of ", TransB);
+      }
+    }
+    default:
+      ORT_THROW("Unexpected CBLAS_TRANSPOSE for TransA of ", TransA);
+  }
+}
+
+#ifdef MLAS_F16VEC_INTRINSICS_SUPPORTED
+static bool IsMatrixZero(MLFloat16* C, ptrdiff_t size) {
+  if (C == nullptr) {
+    return true;
+  }
+  for (ptrdiff_t i = 0; i != size; ++i) {
+    if (C[i].val != 0) return false;
+  }
+  return true;
+}
+#endif
+template <>
+void Gemm<MLFloat16, ThreadPool>(CBLAS_TRANSPOSE TransA, CBLAS_TRANSPOSE TransB, ptrdiff_t M,
+                                 ptrdiff_t N, ptrdiff_t K, MLFloat16 alpha, const MLFloat16* A, const MLFloat16* B, MLFloat16 beta,
+                                 MLFloat16* C, ThreadPool* tp) {
+#ifdef MLAS_F16VEC_INTRINSICS_SUPPORTED
+  if (TransA == CblasNoTrans && TransB == CblasNoTrans && IsMatrixZero(C, M * N) && alpha.ToFloat() == 1.0 && beta.ToFloat() == 1.0) {
+    MLAS_HALF_GEMM_DATA_PARAMS data;
+    data.A = A;
+    data.lda = K;
+    data.B = B;
+    data.ldb = N;
+    data.C = C;
+    data.ldc = N;
+
+    MlasHalfGemmBatch(M, N, K, 1, &data, tp);
+    return;
+  }
+#endif
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif
+  Gemm<Eigen::half, ThreadPool>(TransA, TransB, M, N, K, *reinterpret_cast<Eigen::half*>(&alpha),
+                                reinterpret_cast<const Eigen::half*>(A), reinterpret_cast<const Eigen::half*>(B), *reinterpret_cast<Eigen::half*>(&beta), reinterpret_cast<Eigen::half*>(C), tp);
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 }
 
 #ifdef MLAS_SUPPORTS_GEMM_DOUBLE
@@ -434,7 +518,6 @@ void Im2col<T, StorageOrder::NHWC>::operator()(
     int64_t output_count,
     T* data_col,
     T padding_value) {
-
   int64_t mh = output_start / output_w;
   int64_t mw = output_start % output_w;
   for (int64_t mz = output_start; mz < output_start + output_count; mz++) {
