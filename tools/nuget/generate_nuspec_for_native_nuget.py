@@ -389,7 +389,7 @@ def generate_files(line_list, args):
             "<file src="
             + '"'
             + os.path.join(
-                args.sources_path, "orttraining\\orttraining\\training_api\\include\\onnxruntime_training_c_api.h"
+                args.sources_path, "orttraining\\orttraining\\training_api\\include\\onnxruntime_training_*.h"
             )
             + '" target="build\\native\\include" />'
         )
