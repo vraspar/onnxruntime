@@ -695,12 +695,14 @@ stages:
     AgentPool : 'onnxruntime-gpu-tensorrt8-winbuild-t4'
     NugetPackageName : 'Microsoft.ML.OnnxRuntime.Gpu'
     ArtifactSuffix: 'GPU'
+    StageSuffix: 'GPU'
     Skipx86Tests: 'true'
 
 - template: nuget/templates/test_linux.yml
   parameters:
     AgentPool : Onnxruntime-Linux-GPU
     ArtifactSuffix: 'GPU'
+    StageSuffix: 'GPU'
     NugetPackageName : 'Microsoft.ML.OnnxRuntime.Gpu'
 
 - template: nuget/templates/dml-vs-2019.yml

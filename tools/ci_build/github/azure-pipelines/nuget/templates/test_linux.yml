@@ -2,11 +2,12 @@ parameters:
   AgentPool: 'aiinfra-Linux-CPU'
   ArtifactSuffix: ''
   NugetPackageName : ''
+  StageSuffix: 'CPU'
 
 stages:
-- stage: NuGet_Test_Linux_${{ parameters.ArtifactSuffix }}
+- stage: NuGet_Test_Linux_${{ parameters.StageSuffix }}
   dependsOn:
-  - NuGet_Packaging_${{ parameters.ArtifactSuffix }}
+  - NuGet_Packaging_${{ parameters.StageSuffix }}
   # For downloading Linux CustomOp TestData
   - Linux_C_API_Packaging_CPU
   condition: succeeded()

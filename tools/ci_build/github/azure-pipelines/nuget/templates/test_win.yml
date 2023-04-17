@@ -3,11 +3,12 @@ parameters:
   NugetPackageName : ''
   ArtifactSuffix: ''
   Skipx86Tests: 'false'
+  StageSuffix: 'CPU'
 
 stages:
-- stage: NuGet_Test_Win_${{ parameters.ArtifactSuffix }}
+- stage: NuGet_Test_Win_${{ parameters.StageSuffix }}
   dependsOn:
-  - NuGet_Packaging_${{ parameters.ArtifactSuffix }}
+  - NuGet_Packaging_${{ parameters.StageSuffix }}
   condition: succeeded()
   jobs:
   - job:

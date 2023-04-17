@@ -107,7 +107,7 @@ stages:
     AdditionalBuildFlags: ${{ parameters.AdditionalBuildFlags }}
     stage_name_suffix: Training_CPU
 
-- stage: NuGet_Packaging_CPU
+- stage: NuGet_Packaging_Training_CPU
   dependsOn:
   - Linux_C_API_Packaging_Training_CPU
   - MacOS_C_API_Packaging_Training_CPU
@@ -337,12 +337,14 @@ stages:
     Skipx86Tests : false
     NugetPackageName : 'Microsoft.ML.OnnxRuntime.Training'
     ArtifactSuffix: 'Training-CPU'
+    StageSuffix: 'Training_CPU'
 
 - template: ../nuget/templates/test_linux.yml
   parameters:
     AgentPool : aiinfra-Linux-CPU
     NugetPackageName : 'Microsoft.ML.OnnxRuntime.Training'
     ArtifactSuffix: 'Training-CPU'
+    StageSuffix: 'Training_CPU'
 
 - template: ../nuget/templates/test_macos.yml
   parameters:
