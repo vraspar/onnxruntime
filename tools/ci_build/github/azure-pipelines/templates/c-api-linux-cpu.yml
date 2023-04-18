@@ -92,7 +92,7 @@ jobs:
       parameters:
           buildConfig: 'Release'
           artifactName: '${{parameters.ArtifactNamePrefix}}-linux-${{parameters.OnnxruntimeArch}}-$(OnnxRuntimeVersion)'
-          artifactNameNoVersionString: 'onnxruntime-linux-${{parameters.OnnxruntimeArch}}'
+          artifactNameNoVersionString: '${{parameters.ArtifactNamePrefix}}-linux-${{parameters.OnnxruntimeArch}}'
           libraryName: 'libonnxruntime.so.$(OnnxRuntimeVersion)'
 
     - ${{ if eq(parameters.PackageNodejs, 'true') }}:

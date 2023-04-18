@@ -44,12 +44,15 @@ stages:
     AdditionalBuildFlags: ${{ parameters.AdditionalBuildFlags }}
     stage_name_suffix: Training_CPU
     ArtifactNamePrefix: onnxruntime-training
+    PackageJava: false
+    PackageNodeJS: false
 
 - template: win-ci.yml
   parameters:
     DoCompliance: ${{ parameters.DoCompliance }}
     DoEsrp: ${{ parameters.DoEsrp }}
     stage_name_suffix: Training_CPU_x86_${{ parameters.BuildVariant }}
+    artifact_name_prefix: onnxruntime-training
     EnvSetupScript: setup_env_x86.bat
     buildArch: x86
     msbuildPlatform: Win32
@@ -64,6 +67,7 @@ stages:
     DoCompliance: ${{ parameters.DoCompliance }}
     DoEsrp: ${{ parameters.DoEsrp }}
     stage_name_suffix: Training_CPU_arm_${{ parameters.BuildVariant }}
+    artifact_name_prefix: onnxruntime-training
     EnvSetupScript: setup_env.bat
     buildArch: x64
     msbuildPlatform: arm
@@ -78,6 +82,7 @@ stages:
     DoCompliance: ${{ parameters.DoCompliance }}
     DoEsrp: ${{ parameters.DoEsrp }}
     stage_name_suffix: Training_CPU_arm64_${{ parameters.BuildVariant }}
+    artifact_name_prefix: onnxruntime-training
     EnvSetupScript: setup_env.bat
     buildArch: x64
     msbuildPlatform: arm64
@@ -92,6 +97,7 @@ stages:
     DoCompliance: ${{ parameters.DoCompliance }}
     DoEsrp: ${{ parameters.DoEsrp }}
     stage_name_suffix: Training_CPU_x64_${{ parameters.BuildVariant }}
+    artifact_name_prefix: onnxruntime-training
     EnvSetupScript: setup_env.bat
     buildArch: x64
     msbuildPlatform: x64
@@ -101,17 +107,9 @@ stages:
     buildJava: false
     buildNodejs: false
 
-- template: mac-cpu-packaging-pipeline.yml
-  parameters:
-    AllowReleasedOpsetOnly: 1
-    BuildForAllArchs: true
-    AdditionalBuildFlags: ${{ parameters.AdditionalBuildFlags }}
-    stage_name_suffix: Training_CPU
-
 - stage: NuGet_Packaging_Training_CPU
   dependsOn:
   - Linux_C_API_Packaging_Training_CPU
-  - MacOS_C_API_Packaging_Training_CPU
   - Windows_Packaging_Training_CPU_x86_${{ parameters.BuildVariant }}
   - Windows_Packaging_Training_CPU_x64_${{ parameters.BuildVariant }}
   - Windows_Packaging_Training_CPU_arm_${{ parameters.BuildVariant }}
@@ -167,12 +165,6 @@ stages:
         targetPath: '$(Build.BinariesDirectory)/nuget-artifact'
 
     - task: DownloadPipelineArtifact@0
-      displayName: 'Download Pipeline Artifact - NuGet (OSX)'
-      inputs:
-        artifactName: 'onnxruntime-training-osx'
-        targetPath: '$(Build.BinariesDirectory)/nuget-artifact'
-
-    - task: DownloadPipelineArtifact@0
       displayName: 'Download drop-extra Pipeline Artifact'
       inputs:
         artifactName: 'drop-extra'
@@ -199,14 +191,6 @@ stages:
       displayName: Use Nuget 6.2.1
       inputs:
         versionSpec: 6.2.1
-
-    - task: PowerShell@2
-      displayName: Install .NET 6 workloads
-      inputs:
-        targetType: 'inline'
-        script: |
-          dotnet workload install macos
-        workingDirectory: '$(Build.SourcesDirectory)\csharp'
 
     - task: PowerShell@2
       displayName: Build Microsoft.ML.OnnxRuntime .NET 6 targets using dotnet
@@ -344,11 +328,5 @@ stages:
   parameters:
     AgentPool : aiinfra-Linux-CPU
     NugetPackageName : 'Microsoft.ML.OnnxRuntime.Training'
-    ArtifactSuffix: 'Training-CPU'
-    StageSuffix: 'Training_CPU'
-
-- template: ../nuget/templates/test_macos.yml
-  parameters:
-    AgentPool : macOS-12
     ArtifactSuffix: 'Training-CPU'
     StageSuffix: 'Training_CPU'
