@@ -22,13 +22,8 @@ parameters:
   type: boolean
   default: false
 
-- name: stage_name_suffix
-  displayName: job name for nuget
-  type: string
-  default: 'CPU'
-
 stages:
-- stage: MacOS_C_API_Packaging_${{ parameters.stage_name_suffix }}
+- stage: MacOS_C_API_Packaging_CPU
   dependsOn: []
   jobs:
   - ${{ if eq(parameters.BuildForAllArchs, true) }}:
