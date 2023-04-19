@@ -107,6 +107,23 @@ stages:
     buildJava: false
     buildNodejs: false
 
+- stage: Android_Java_API_AAR_Packaging_Training_Full
+  dependsOn: []
+  jobs:
+  - template: android-java-api-aar.yml
+    parameters:
+      buildConfig: 'Release'
+      buildSettings: '$(Build.SourcesDirectory)/tools/ci_build/github/android/default_full_training_aar_build_settings.json'
+      artifactName: 'onnxruntime-training-android-full-aar'
+      job_name_suffix: 'Training_Full'
+      publish_executables: '1'
+      packageName: onnxruntime-training-android
+  - template: android-java-api-aar-test.yml
+    parameters:
+      artifactName: 'onnxruntime-training-android-full-aar'
+      job_name_suffix: 'Training_Full'
+      packageName: onnxruntime-training-android
+
 - stage: NuGet_Packaging_Training_CPU
   dependsOn:
   - Linux_C_API_Packaging_Training_CPU
@@ -114,6 +131,8 @@ stages:
   - Windows_Packaging_Training_CPU_x64_${{ parameters.BuildVariant }}
   - Windows_Packaging_Training_CPU_arm_${{ parameters.BuildVariant }}
   - Windows_Packaging_Training_CPU_arm64_${{ parameters.BuildVariant }}
+  - Android_Java_API_AAR_Packaging_Training_Full
+  condition: succeeded()
   jobs:
   - job:
     workspace:
