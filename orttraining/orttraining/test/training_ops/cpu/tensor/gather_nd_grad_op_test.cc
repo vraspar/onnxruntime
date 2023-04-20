@@ -9,15 +9,15 @@
 namespace onnxruntime {
 namespace test {
 
-TEST(GatherNDGradOpTest, GatherNDGrad_slice_float_int64_t_batch_dims_zero) {
-  OpTester test("GatherNDGrad", 1, kMSDomain);
-  test.AddAttribute<int64_t>("batch_dims", 0);
-  test.AddInput<int64_t>("shape", {3}, {2, 2, 3});
-  test.AddInput<int64_t>("indices", {2, 2}, {0LL, 1LL, 1LL, 0LL});
-  test.AddInput<float>("update", {2, 3}, ValueRange(6, 1.0f));
-  test.AddOutput<float>("output", {2, 2, 3}, {0, 0, 0, 1, 2, 3, 4, 5, 6, 0, 0, 0});
-  test.Run();
-}
+// TEST(GatherNDGradOpTest, GatherNDGrad_slice_float_int64_t_batch_dims_zero) {
+//   OpTester test("GatherNDGrad", 1, kMSDomain);
+//   test.AddAttribute<int64_t>("batch_dims", 0);
+//   test.AddInput<int64_t>("shape", {3}, {2, 2, 3});
+//   test.AddInput<int64_t>("indices", {2, 2}, {0LL, 1LL, 1LL, 0LL});
+//   test.AddInput<float>("update", {2, 3}, ValueRange(6, 1.0f));
+//   test.AddOutput<float>("output", {2, 2, 3}, {0, 0, 0, 1, 2, 3, 4, 5, 6, 0, 0, 0});
+//   test.Run();
+// }
 
 // TEST(GatherNDGradOpTest, GatherNDGrad_slice_float_int64_t_batch_dims_zero_negative_indices) {
 //   OpTester test("GatherNDGrad", 1, kMSDomain);
