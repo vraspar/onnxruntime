@@ -160,6 +160,8 @@ def _build_aar(args):
         # we only need to define the header files path once
         if not header_files_path:
             header_files_path = os.path.join(abi_build_dir, build_config, "android", "headers")
+            print("************************************************************************")
+            print(header_files_path)
 
     # The directory to publish final AAR
     aar_publish_dir = os.path.join(build_dir, "aar_out", build_config)
