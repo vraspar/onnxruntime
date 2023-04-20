@@ -3,7 +3,7 @@
 
 // The optimization here ideally is applicable to both training and inferencing,
 // while so far we mainly validate on training during cooking the optimization.
-#ifdef ENABLE_TRAINING_CORE
+#ifdef ENABLE_TRAINING
 #pragma once
 
 #include <initializer_list>
@@ -12,7 +12,7 @@
 #include <vector>
 
 // Uncomment for debugging Compute optimizer (CO).
-// #define CO_NEED_LOG_DEBUG_INFO 1
+//#define CO_NEED_LOG_DEBUG_INFO 1
 
 #ifndef LOG_DEBUG_INFO
 #ifdef CO_NEED_LOG_DEBUG_INFO
