@@ -13,8 +13,6 @@
         "--cmake_generator=Ninja",
         "--build_java",
         "--build_shared_lib",
-        "--use_nnapi",
-        "--use_xnnpack",
         "--skip_tests",
         "--enable_training_apis"
     ]
