@@ -182,6 +182,7 @@ def _build_aar(args):
         "-DminSdkVer=" + str(build_settings["android_min_sdk_version"]),
         "-DtargetSdkVer=" + str(build_settings["android_target_sdk_version"]),
         "-DbuildVariant=" + str(build_settings["build_variant"]),
+        "-DENABLE_TRAINING=1",
     ]
 
     # clean, build, and publish to a local directory
