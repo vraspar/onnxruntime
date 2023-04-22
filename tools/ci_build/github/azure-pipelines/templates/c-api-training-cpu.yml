@@ -106,6 +106,8 @@ stages:
     runTests: ${{ parameters.RunOnnxRuntimeTests }}
     buildJava: false
     buildNodejs: false
+    # This artifact is only created for x64 builds. So we only need to specify for the x64 build task.
+    extraArtifactName: drop-extra-training
 
 - stage: Android_Java_API_AAR_Packaging_Training_Full
   dependsOn: []
@@ -186,7 +188,7 @@ stages:
     - task: DownloadPipelineArtifact@0
       displayName: 'Download drop-extra Pipeline Artifact'
       inputs:
-        artifactName: 'drop-extra'
+        artifactName: 'drop-extra-training'
         targetPath: '$(Build.BinariesDirectory)/extra-artifact'
 
     - script: |

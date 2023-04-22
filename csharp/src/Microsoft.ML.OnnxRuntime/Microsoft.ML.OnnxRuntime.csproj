@@ -27,7 +27,8 @@
   <!-- only set the Xamarin mobile targets if we're building an ORT package,
        and only if the mobile workloads are installed -->
   <PropertyGroup Condition="('$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime' OR
-                             '$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime.Gpu') AND
+                             '$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime.Gpu' OR
+                             '$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime.Training') AND
                              Exists('$(MSBuildExtensionsPath)\Xamarin\Android') AND
                              Exists('$(MSBuildExtensionsPath)\Xamarin\iOS')">
     <XamarinTargets>xamarinios10;monoandroid11.0</XamarinTargets>
@@ -36,7 +37,8 @@
   <!-- only set the .net6 targets if we're building an ORT package.
        we can add .net6 support to other packages later as needed -->
   <PropertyGroup Condition="('$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime' OR
-                             '$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime.Gpu')">
+                             '$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime.Gpu' OR
+                             '$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime.Training')">
     <Net6Targets>net6.0;net6.0-android;net6.0-ios;net6.0-macos</Net6Targets>
   </PropertyGroup>
 
@@ -221,6 +223,13 @@
     />
     <None Include="$(OnnxRuntimeCsharpRoot)\..\include\onnxruntime\core\providers\dml\dml_provider_factory.h"
           Condition="'$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime.DirectML'"
+          PackagePath="\build\native\include"
+          Pack="false"
+          CopyToOutputDirectory="Never"
+          Visible="false"
+    />
+    <None Include="$(OnnxRuntimeCsharpRoot)\..\orttraining\orttraining\training_api\include\onnxruntime_training*.h"
+          Condition="'$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime.Training'"
           PackagePath="\build\native\include"
           Pack="false"
           CopyToOutputDirectory="Never"

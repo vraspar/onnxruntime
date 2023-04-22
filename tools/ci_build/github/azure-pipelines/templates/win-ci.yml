@@ -56,6 +56,11 @@ parameters:
   type: string
   default: 'onnxruntime'
 
+#'drop-extra' or 'drop-extra-training'
+- name: extraArtifactName
+  type: string
+  default: 'drop-extra'
+
 - name: UseIncreasedTimeoutForTests
   displayName: Increase timeout for tests? Set it to false if you are doing an Onnx Runtime release.
   type: boolean
@@ -172,7 +177,7 @@ stages:
         condition: and(succeeded(), eq('${{ parameters.packageName}}', 'x64'))
         inputs:
           targetPath: '$(Build.BinariesDirectory)\RelWithDebInfo\installed\bin\protoc.exe'
-          artifactName: 'drop-extra'
+          artifactName: ${{parameters.extraArtifactName}}
 
 
       - task: CopyFiles@2

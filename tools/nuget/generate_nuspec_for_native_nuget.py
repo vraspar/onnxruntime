@@ -12,16 +12,16 @@ from pathlib import Path
 # os: win, linux, osx
 # ep: cuda, tensorrt, None
 def get_package_name(os, cpu_arch, ep):
-    pkg_name = None
+    pkg_name = "onnxruntime-training" if is_training_package else "onnxruntime"
     if os == "win":
-        pkg_name = "onnxruntime-win-"
+        pkg_name += "-win-"
         pkg_name += cpu_arch
         if ep == "cuda":
             pkg_name += "-cuda"
         elif ep == "tensorrt":
             pkg_name += "-tensorrt"
     elif os == "linux":
-        pkg_name = "onnxruntime-linux-"
+        pkg_name += "-linux-"
         pkg_name += cpu_arch
         if ep == "cuda":
             pkg_name += "-cuda"
