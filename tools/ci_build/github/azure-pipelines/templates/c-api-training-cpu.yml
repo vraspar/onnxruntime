@@ -53,7 +53,6 @@ stages:
     DoEsrp: ${{ parameters.DoEsrp }}
     stage_name_suffix: Training_CPU_x86_${{ parameters.BuildVariant }}
     artifact_name_prefix: onnxruntime-training
-    extraArtifactNameSuffix: '-training'
     EnvSetupScript: setup_env_x86.bat
     buildArch: x86
     msbuildPlatform: Win32
@@ -108,7 +107,7 @@ stages:
     buildJava: false
     buildNodejs: false
     # This artifact is only created for x64 builds. So we only need to specify for the x64 build task.
-    extraArtifactName: drop-extra-training
+    extraArtifactNameSuffix: '-training'
 
 - stage: Android_Java_API_AAR_Packaging_Training_Full
   dependsOn: []
