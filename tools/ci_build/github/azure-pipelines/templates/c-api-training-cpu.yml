@@ -129,11 +129,11 @@ stages:
 - stage: NuGet_Packaging_Training_CPU
   dependsOn:
   - Linux_C_API_Packaging_Training_CPU
-  - Windows_Packaging_Training_CPU_x86_${{ parameters.BuildVariant }}
-  - Windows_Packaging_Training_CPU_x64_${{ parameters.BuildVariant }}
-  - Windows_Packaging_Training_CPU_arm_${{ parameters.BuildVariant }}
-  - Windows_Packaging_Training_CPU_arm64_${{ parameters.BuildVariant }}
-  - Android_Java_API_AAR_Packaging_Training_Full
+  # - Windows_Packaging_Training_CPU_x86_${{ parameters.BuildVariant }}
+  # - Windows_Packaging_Training_CPU_x64_${{ parameters.BuildVariant }}
+  # - Windows_Packaging_Training_CPU_arm_${{ parameters.BuildVariant }}
+  # - Windows_Packaging_Training_CPU_arm64_${{ parameters.BuildVariant }}
+  #- Android_Java_API_AAR_Packaging_Training_Full
   condition: succeeded()
   jobs:
   - job:
@@ -155,35 +155,42 @@ stages:
         artifactName: 'onnxruntime-training-win-x64'
         targetPath: '$(Build.BinariesDirectory)/nuget-artifact'
 
-    - task: DownloadPipelineArtifact@0
-      displayName: 'Download win-x86 Pipeline Artifact'
-      inputs:
-        artifactName: 'onnxruntime-training-win-x86'
-        targetPath: '$(Build.BinariesDirectory)/nuget-artifact'
+    # - task: DownloadPipelineArtifact@0
+    #   displayName: 'Download win-x86 Pipeline Artifact'
+    #   inputs:
+    #     artifactName: 'onnxruntime-training-win-x86'
+    #     targetPath: '$(Build.BinariesDirectory)/nuget-artifact'
 
-    - task: DownloadPipelineArtifact@0
-      displayName: 'Download win-arm64 Pipeline Artifact'
-      inputs:
-        artifactName: 'onnxruntime-training-win-arm64'
-        targetPath: '$(Build.BinariesDirectory)/nuget-artifact'
+    # - task: DownloadPipelineArtifact@0
+    #   displayName: 'Download win-arm64 Pipeline Artifact'
+    #   inputs:
+    #     artifactName: 'onnxruntime-training-win-arm64'
+    #     targetPath: '$(Build.BinariesDirectory)/nuget-artifact'
 
-    - task: DownloadPipelineArtifact@0
-      displayName: 'Download win-arm Pipeline Artifact'
-      inputs:
-        artifactName: 'onnxruntime-training-win-arm'
-        targetPath: '$(Build.BinariesDirectory)/nuget-artifact'
+    # - task: DownloadPipelineArtifact@0
+    #   displayName: 'Download win-arm Pipeline Artifact'
+    #   inputs:
+    #     artifactName: 'onnxruntime-training-win-arm'
+    #     targetPath: '$(Build.BinariesDirectory)/nuget-artifact'
 
-    - task: DownloadPipelineArtifact@0
-      displayName: 'Download linux-x64 Pipeline Artifact'
-      inputs:
-        artifactName: 'onnxruntime-training-linux-x64'
-        targetPath: '$(Build.BinariesDirectory)/nuget-artifact'
+    # - task: DownloadPipelineArtifact@0
+    #   displayName: 'Download linux-x64 Pipeline Artifact'
+    #   inputs:
+    #     artifactName: 'onnxruntime-training-linux-x64'
+    #     targetPath: '$(Build.BinariesDirectory)/nuget-artifact'
 
-    - task: DownloadPipelineArtifact@0
-      displayName: 'Download Pipeline Artifact - NuGet'
-      inputs:
-        artifactName: 'onnxruntime-training-linux-aarch64'
-        targetPath: '$(Build.BinariesDirectory)/nuget-artifact'
+    # - task: DownloadPipelineArtifact@0
+    #   displayName: 'Download Pipeline Artifact - NuGet'
+    #   inputs:
+    #     artifactName: 'onnxruntime-training-linux-aarch64'
+    #     targetPath: '$(Build.BinariesDirectory)/nuget-artifact'
+
+    # - task: DownloadPipelineArtifact@2
+    #   displayName: 'Download android-full-aar Pipeline Artifact'
+    #   inputs:
+    #     artifactName: 'onnxruntime-training-android-full-aar'
+    #     patterns: '**/*.aar'
+    #     targetPath: '$(Build.BinariesDirectory)/nuget-artifact'
 
     - task: DownloadPipelineArtifact@0
       displayName: 'Download drop-extra Pipeline Artifact'
@@ -212,6 +219,14 @@ stages:
       displayName: Use Nuget 6.2.1
       inputs:
         versionSpec: 6.2.1
+
+    - task: PowerShell@2
+      displayName: Install .NET 6 workloads
+      inputs:
+        targetType: 'inline'
+        script: |
+          dotnet workload install android
+        workingDirectory: '$(Build.SourcesDirectory)\csharp'
 
     - task: PowerShell@2
       displayName: Build Microsoft.ML.OnnxRuntime .NET 6 targets using dotnet

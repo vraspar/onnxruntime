@@ -201,7 +201,7 @@ publishing {
 
 			from components.java
 			pom {
-				name = 'onnx-runtime'
+				name = enableTrainingApis == "1" ? 'onnxruntime-training' : 'onnx-runtime'
 				description = 'ONNX Runtime is a performance-focused inference engine for ONNX (Open Neural Network Exchange) models.'
 				url = 'https://microsoft.github.io/onnxruntime/'
 				licenses {

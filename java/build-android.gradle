@@ -8,7 +8,7 @@ def publishDir = System.properties['publishDir']
 def minSdkVer = System.properties['minSdkVer']
 def targetSdkVer = System.properties['targetSdkVer']
 def buildVariant = System.properties['buildVariant'] ?: "Full"
-def enableTraining = System.properties['ENABLE_TRAINING']
+def enableTrainingApis = System.properties['ENABLE_TRAINING_APIS']
 boolean isMobileBuild = (buildVariant == "Mobile")
 
 // Since Android requires a higher numbers indicating more recent versions
@@ -27,7 +27,7 @@ project.buildDir = buildDir
 project.version = rootProject.file('../VERSION_NUMBER').text.trim()
 project.group = "com.microsoft.onnxruntime"
 
-def tmpArtifactId = enableTraining == "1" ? project.name + "-training" : project.name
+def tmpArtifactId = enableTrainingApis == "1" ? project.name + "-training" : project.name
 def mavenArtifactId = isMobileBuild ? tmpArtifactId + '-mobile' : tmpArtifactId + '-android'
 def mobileDescription = 'The ONNX Runtime Mobile package is a size optimized inference library for executing ONNX ' +
 	'(Open Neural Network Exchange) models on Android. This package is built from the open source inference engine ' +
@@ -144,8 +144,8 @@ publishing {
 			artifact sourcesJar
 
 			pom {
-				name = enableTraining == "1" ? 'onnxruntime-training' : 'onnx-runtime'
-				description = isMobileBuild ? mobileDescription : enableTraining == "1" ? trainingDescription : defaultDescription
+				name = enableTrainingApis == "1" ? 'onnxruntime-training' : 'onnx-runtime'
+				description = isMobileBuild ? mobileDescription : enableTrainingApis == "1" ? trainingDescription : defaultDescription
 				url = 'https://microsoft.github.io/onnxruntime/'
 				licenses {
 					license {
