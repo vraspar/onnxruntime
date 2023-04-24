@@ -182,9 +182,11 @@ def _build_aar(args):
         "-DminSdkVer=" + str(build_settings["android_min_sdk_version"]),
         "-DtargetSdkVer=" + str(build_settings["android_target_sdk_version"]),
         "-DbuildVariant=" + str(build_settings["build_variant"]),
-        "-DENABLE_TRAINING=1" if "--enable_training_apis" in build_settings["build_params"] else None,
+        "-DENABLE_TRAINING=1" if "--enable_training_apis" in build_settings["build_params"] else "-DENABLE_TRAINING=0",
     ]
 
+    print("Generated Gradle Command")
+    print(gradle_command)
     # clean, build, and publish to a local directory
     subprocess.run([*gradle_command, "clean"], env=temp_env, shell=False, check=True, cwd=JAVA_ROOT)
     subprocess.run([*gradle_command, "build"], env=temp_env, shell=False, check=True, cwd=JAVA_ROOT)

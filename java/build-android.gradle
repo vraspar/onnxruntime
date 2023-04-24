@@ -27,7 +27,7 @@ project.buildDir = buildDir
 project.version = rootProject.file('../VERSION_NUMBER').text.trim()
 project.group = "com.microsoft.onnxruntime"
 
-def tmpArtifactId = enableTraining == null ? project.name : project.name + "-training"
+def tmpArtifactId = enableTraining == "1" ? project.name + "-training" : project.name
 def mavenArtifactId = isMobileBuild ? tmpArtifactId + '-mobile' : tmpArtifactId + '-android'
 def mobileDescription = 'The ONNX Runtime Mobile package is a size optimized inference library for executing ONNX ' +
 	'(Open Neural Network Exchange) models on Android. This package is built from the open source inference engine ' +
@@ -144,8 +144,8 @@ publishing {
 			artifact sourcesJar
 
 			pom {
-				name = enableTraining == null ? 'onnx-runtime' : 'onnxruntime-training'
-				description = isMobileBuild ? mobileDescription : enableTraining == null ? defaultDescription : trainingDescription
+				name = enableTraining == "1" ? 'onnxruntime-training' : 'onnx-runtime'
+				description = isMobileBuild ? mobileDescription : enableTraining == "1" ? trainingDescription : defaultDescription
 				url = 'https://microsoft.github.io/onnxruntime/'
 				licenses {
 					license {

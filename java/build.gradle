@@ -29,7 +29,7 @@ def cmakeBuildOutputDir = "${cmakeJavaDir}/build"
 def mavenUser = System.properties['mavenUser']
 def mavenPwd = System.properties['mavenPwd']
 
-def tmpArtifactId = enableTraining == null ? project.name : project.name + "-training"
+def tmpArtifactId = enableTraining == "1" ? project.name + "-training" : project.name
 def mavenArtifactId = (useCUDA == null && useROCM == null) ? tmpArtifactId : tmpArtifactId + "_gpu"
 
 java {
