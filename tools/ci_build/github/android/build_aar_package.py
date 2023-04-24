@@ -160,7 +160,7 @@ def _build_aar(args):
         # we only need to define the header files path once
         if not header_files_path:
             header_files_path = os.path.join(abi_build_dir, build_config, "android", "headers")
-            print("************************************************************************")
+            print("***************************Headers Path******************************************")
             print(header_files_path)
 
     # The directory to publish final AAR
@@ -182,7 +182,7 @@ def _build_aar(args):
         "-DminSdkVer=" + str(build_settings["android_min_sdk_version"]),
         "-DtargetSdkVer=" + str(build_settings["android_target_sdk_version"]),
         "-DbuildVariant=" + str(build_settings["build_variant"]),
-        "-DENABLE_TRAINING=1" if "--enable_training_apis" in build_settings["build_params"] else "",
+        "-DENABLE_TRAINING=1" if "--enable_training_apis" in build_settings["build_params"] else None,
     ]
 
     # clean, build, and publish to a local directory
