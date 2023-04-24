@@ -2,7 +2,6 @@
 // Licensed under the MIT License.
 
 #ifdef ENABLE_TRAINING
-
 #include <onnx/defs/attr_proto_util.h>
 
 #include "orttraining/core/optimizer/compute_optimizer/sceloss_compute_optimization.h"

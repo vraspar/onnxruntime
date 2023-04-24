@@ -428,4 +428,5 @@ TEST(ComputeOptimizerTests, InsertGatherBeforeSceLoss_MlmBertE2E) {
 
 }  // namespace test
 }  // namespace onnxruntime
+
 #endif

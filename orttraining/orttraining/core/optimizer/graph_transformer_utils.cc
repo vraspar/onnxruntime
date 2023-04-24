@@ -165,6 +165,7 @@ std::vector<std::unique_ptr<GraphTransformer>> GeneratePreTrainingTransformers(
                                                                      config.propagate_cast_ops_config.allow,
                                                                      cuda_execution_provider));
       }
+
 #ifdef ENABLE_TRAINING
       if (config.enable_compute_optimizer) {
         transformers.emplace_back(std::make_unique<UpStreamGatherGraphTransformer>(compatible_eps));
@@ -174,6 +175,7 @@ std::vector<std::unique_ptr<GraphTransformer>> GeneratePreTrainingTransformers(
         }
       }
 #endif
+
     } break;
 
     case TransformerLevel::Level2: {
