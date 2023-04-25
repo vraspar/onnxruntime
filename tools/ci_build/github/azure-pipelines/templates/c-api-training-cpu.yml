@@ -130,7 +130,7 @@ stages:
   dependsOn:
   - Linux_C_API_Packaging_Training_CPU
   # - Windows_Packaging_Training_CPU_x86_${{ parameters.BuildVariant }}
-  # - Windows_Packaging_Training_CPU_x64_${{ parameters.BuildVariant }}
+  - Windows_Packaging_Training_CPU_x64_${{ parameters.BuildVariant }}
   # - Windows_Packaging_Training_CPU_arm_${{ parameters.BuildVariant }}
   # - Windows_Packaging_Training_CPU_arm64_${{ parameters.BuildVariant }}
   #- Android_Java_API_AAR_Packaging_Training_Full
