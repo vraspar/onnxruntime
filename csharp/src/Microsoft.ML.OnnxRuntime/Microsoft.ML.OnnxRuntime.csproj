@@ -27,12 +27,16 @@
   <!-- only set the Xamarin mobile targets if we're building an ORT package,
        and only if the mobile workloads are installed -->
   <PropertyGroup Condition="('$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime' OR
-                             '$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime.Gpu' OR
-                             '$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime.Training') AND
+                             '$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime.Gpu') AND
                              Exists('$(MSBuildExtensionsPath)\Xamarin\Android') AND
                              Exists('$(MSBuildExtensionsPath)\Xamarin\iOS')">
     <XamarinTargets>xamarinios10;monoandroid11.0</XamarinTargets>
   </PropertyGroup>
+
+  <!-- <PropertyGroup Condition="('$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime.Training') AND
+                             Exists('$(MSBuildExtensionsPath)\Xamarin\Android')">
+    <XamarinTargetsForTraining>xamarinios10;monoandroid11.0</XamarinTargetsForTraining>
+  </PropertyGroup> -->
 
   <!-- only set the .net6 targets if we're building an ORT package.
        we can add .net6 support to other packages later as needed -->
@@ -199,7 +203,7 @@
     <DefineConstants>$(DefineConstants);$(OrtConstants)</DefineConstants>
   </PropertyGroup>
 
-  <!-- debug output - makes finding/fixing any issues with the the conditions easy.
+  <!-- debug output - makes finding/fixing any issues with the the conditions easy.-->
   <Target Name="DumpValues" BeforeTargets="PreBuildEvent">
     <Message Text="TargetPlatform='$(TargetPlatform)' TargetPlatformIdentifier='$(TargetPlatformIdentifier)' " />
     <Message Text="TargetFramework='$(TargetFramework)' TargetFrameworkIdentifier='$(TargetFrameworkIdentifier)' " />
@@ -209,7 +213,6 @@
     <Message Text="OrtConstants='$(OrtConstants)' " />
     <Message Text="TargetFrameworks='$(TargetFrameworks)' " />
   </Target>
-  -->
 
   <ItemGroup>
     <None Include="$(OnnxRuntimeCsharpRoot)\..\include\onnxruntime\core\session\onnxruntime_*.h"
