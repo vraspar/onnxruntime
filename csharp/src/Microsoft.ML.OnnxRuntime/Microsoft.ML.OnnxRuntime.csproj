@@ -33,10 +33,10 @@
     <XamarinTargets>xamarinios10;monoandroid11.0</XamarinTargets>
   </PropertyGroup>
 
-  <!-- <PropertyGroup Condition="('$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime.Training') AND
+  <PropertyGroup Condition="('$(OrtPackageId)' == 'Microsoft.ML.OnnxRuntime.Training') AND
                              Exists('$(MSBuildExtensionsPath)\Xamarin\Android')">
-    <XamarinTargetsForTraining>xamarinios10;monoandroid11.0</XamarinTargetsForTraining>
-  </PropertyGroup> -->
+    <XamarinTargetsForTraining>monoandroid11.0</XamarinTargetsForTraining>
+  </PropertyGroup>
 
   <!-- only set the .net6 targets if we're building an ORT package.
        we can add .net6 support to other packages later as needed -->
@@ -50,7 +50,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(SelectedTargets)'=='PreNet6'">
-    <TargetFrameworks>$(BaseTargets);$(XamarinTargets)</TargetFrameworks>
+    <TargetFrameworks>$(BaseTargets);$(XamarinTargets);$(XamarinTargetsForTraining)</TargetFrameworks>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(SelectedTargets)'=='Net6'">
@@ -59,7 +59,7 @@
 
   <!-- nuget package creation -->
   <PropertyGroup Condition="'$(SelectedTargets)'=='All'">
-    <TargetFrameworks>$(BaseTargets);$(XamarinTargets);$(Net6Targets);$(Net6TargetsForTrainingPackage)</TargetFrameworks>
+    <TargetFrameworks>$(BaseTargets);$(XamarinTargets);$(XamarinTargetsForTraining);$(Net6Targets);$(Net6TargetsForTrainingPackage)</TargetFrameworks>
   </PropertyGroup>
 
 

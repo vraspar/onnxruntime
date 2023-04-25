@@ -84,7 +84,7 @@ def generate_file_list_for_ep(nuget_artifacts_dir, ep, files_list, include_pdbs)
                             '<file src="' + str(child_file) + '" target="runtimes/linux-%s/native"/>' % cpu_arch
                         )
 
-        if child.name == "onnxruntime-android":
+        if child.name == "onnxruntime-android" or child.name == "onnxruntime-training-android":
             for child_file in child.iterdir():
                 if child_file.suffix in [".aar"]:
                     files_list.append('<file src="' + str(child_file) + '" target="runtimes/android/native"/>')
@@ -301,7 +301,7 @@ def generate_metadata(line_list, args):
 def generate_files(line_list, args):
     files_list = ["<files>"]
 
-    is_cpu_package = args.package_name in ["Microsoft.ML.OnnxRuntime", "Microsoft.ML.OnnxRuntime.OpenMP"]
+    is_cpu_package = args.package_name in ["Microsoft.ML.OnnxRuntime", "Microsoft.ML.OnnxRuntime.OpenMP", "Microsoft.ML.OnnxRuntime.Training"]
     is_mklml_package = args.package_name == "Microsoft.ML.OnnxRuntime.MKLML"
     is_cuda_gpu_package = args.package_name == "Microsoft.ML.OnnxRuntime.Gpu"
     is_dml_package = args.package_name == "Microsoft.ML.OnnxRuntime.DirectML"
@@ -993,6 +993,61 @@ def generate_files(line_list, args):
             files_list.append("<file src=" + '"' + net6_macos_target_targets + '" target="build\\net6.0-macos12.3" />')
             files_list.append(
                 "<file src=" + '"' + net6_macos_target_targets + '" target="buildTransitive\\net6.0-macos12.3" />'
+            )
+
+        # Process Training specific targets and props
+        if args.package_name == "Microsoft.ML.OnnxRuntime.Training":
+            monoandroid_source_targets = os.path.join(
+                args.sources_path,
+                "csharp",
+                "src",
+                "Microsoft.ML.OnnxRuntime",
+                "targets",
+                "monoandroid11.0",
+                "targets.xml",
+            )
+            monoandroid_target_targets = os.path.join(
+                args.sources_path,
+                "csharp",
+                "src",
+                "Microsoft.ML.OnnxRuntime",
+                "targets",
+                "monoandroid11.0",
+                args.package_name + ".targets",
+            )
+
+            net6_android_source_targets = os.path.join(
+                args.sources_path,
+                "csharp",
+                "src",
+                "Microsoft.ML.OnnxRuntime",
+                "targets",
+                "net6.0-android",
+                "targets.xml",
+            )
+            net6_android_target_targets = os.path.join(
+                args.sources_path,
+                "csharp",
+                "src",
+                "Microsoft.ML.OnnxRuntime",
+                "targets",
+                "net6.0-android",
+                args.package_name + ".targets",
+            )
+
+            os.system(copy_command + " " + monoandroid_source_targets + " " + monoandroid_target_targets)
+            os.system(copy_command + " " + net6_android_source_targets + " " + net6_android_target_targets)
+
+            files_list.append("<file src=" + '"' + monoandroid_target_targets + '" target="build\\monoandroid11.0" />')
+            files_list.append(
+                "<file src=" + '"' + monoandroid_target_targets + '" target="buildTransitive\\monoandroid11.0" />'
+            )
+
+            files_list.append(
+                "<file src=" + '"' + net6_android_target_targets + '" target="build\\net6.0-android31.0" />'
+            )
+            files_list.append(
+                "<file src=" + '"' + net6_android_target_targets + '" target="buildTransitive\\net6.0-android31.0" />'
             )
 
     # Process License, ThirdPartyNotices, Privacy
