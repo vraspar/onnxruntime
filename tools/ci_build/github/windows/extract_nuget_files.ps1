@@ -41,7 +41,7 @@ $aars = Get-ChildItem $Env:BUILD_BINARIESDIRECTORY\nuget-artifact -Filter *.aar
 if ($aars.Count -eq 1) {
   $aar = $aars[0]
   $aar_prefix = "onnxruntime"
-  if (aar -like "onnxruntime-training*") {
+  if ($aar -like "onnxruntime-training*") {
     $aar_prefix = "onnxruntime-training"
   }
   $target_dir = "$nuget_artifacts_dir\$aar_prefix-android-aar"
