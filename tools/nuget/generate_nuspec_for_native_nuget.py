@@ -11,7 +11,7 @@ from pathlib import Path
 # What does the names of our C API tarball/zip files looks like
 # os: win, linux, osx
 # ep: cuda, tensorrt, None
-def get_package_name(os, cpu_arch, ep):
+def get_package_name(os, cpu_arch, ep, is_training_package):
     pkg_name = "onnxruntime-training" if is_training_package else "onnxruntime"
     if os == "win":
         pkg_name += "-win-"
@@ -43,13 +43,13 @@ def is_this_file_needed(ep, filename):
 # ep: cuda, tensorrt, None
 # files_list: a list of xml string pieces to append
 # This function has no return value. It updates files_list directly
-def generate_file_list_for_ep(nuget_artifacts_dir, ep, files_list, include_pdbs):
+def generate_file_list_for_ep(nuget_artifacts_dir, ep, files_list, include_pdbs, is_training_package):
     for child in nuget_artifacts_dir.iterdir():
         if not child.is_dir():
             continue
 
         for cpu_arch in ["x86", "x64", "arm", "arm64"]:
-            if child.name == get_package_name("win", cpu_arch, ep):
+            if child.name == get_package_name("win", cpu_arch, ep, is_training_package):
                 child = child / "lib"  # noqa: PLW2901
                 for child_file in child.iterdir():
                     suffixes = [".dll", ".lib", ".pdb"] if include_pdbs else [".dll", ".lib"]
@@ -58,7 +58,7 @@ def generate_file_list_for_ep(nuget_artifacts_dir, ep, files_list, include_pdbs)
                             '<file src="' + str(child_file) + '" target="runtimes/win-%s/native"/>' % cpu_arch
                         )
         for cpu_arch in ["x86_64", "arm64"]:
-            if child.name == get_package_name("osx", cpu_arch, ep):
+            if child.name == get_package_name("osx", cpu_arch, ep, is_training_package):
                 child = child / "lib"  # noqa: PLW2901
                 if cpu_arch == "x86_64":
                     cpu_arch = "x64"  # noqa: PLW2901
@@ -70,7 +70,7 @@ def generate_file_list_for_ep(nuget_artifacts_dir, ep, files_list, include_pdbs)
                             '<file src="' + str(child_file) + '" target="runtimes/osx.10.14-%s/native"/>' % cpu_arch
                         )
         for cpu_arch in ["x64", "aarch64"]:
-            if child.name == get_package_name("linux", cpu_arch, ep):
+            if child.name == get_package_name("linux", cpu_arch, ep, is_training_package):
                 child = child / "lib"  # noqa: PLW2901
                 if cpu_arch == "x86_64":
                     cpu_arch = "x64"  # noqa: PLW2901
@@ -520,7 +520,7 @@ def generate_files(line_list, args):
             else:
                 ep_list = [None]
             for ep in ep_list:
-                generate_file_list_for_ep(nuget_artifacts_dir, ep, files_list, include_pdbs)
+                generate_file_list_for_ep(nuget_artifacts_dir, ep, files_list, include_pdbs, is_training_package)
             is_ado_packaging_build = True
         else:
             # Code path for local dev build
