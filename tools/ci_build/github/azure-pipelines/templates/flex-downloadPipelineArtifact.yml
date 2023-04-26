@@ -21,4 +21,4 @@ steps:
           project: $(System.TeamProject)
           pipeline: $(Build.DefinitionName)
           runVersion: 'specific'
-          runId: $(other_run_id)
+          runId: $(otherRunId)
