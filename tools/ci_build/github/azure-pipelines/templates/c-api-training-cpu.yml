@@ -317,7 +317,7 @@ stages:
       parameters:
         PackageType: 'nuget'
         PackagePath: '$(Build.ArtifactStagingDirectory)'
-        PackageName: 'Microsoft.ML.OnnxRuntime.Training.nupkg'
+        PackageName: 'Microsoft.ML.OnnxRuntime.Training.*nupkg'
         PlatformsSupported: 'win-x64,win-x86,linux-x64,linux-arm64'
         VerifyNugetSigning: false
 
