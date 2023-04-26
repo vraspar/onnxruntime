@@ -5,6 +5,7 @@
 
 #include "core/common/common.h"
 #include "core/common/cpuid_arch_definition.h"
+#include <mutex>
 
 namespace onnxruntime {
 
@@ -12,6 +13,10 @@ class CPUIDInfo {
  public:
   static const CPUIDInfo& GetCPUIDInfo() {
     static CPUIDInfo cpuid_info;
+
+    static std::once_flag init_once;
+    std::call_once(init_once, [&]() { cpuid_info.Init(); });
+
     return cpuid_info;
   }
 
@@ -91,6 +96,9 @@ class CPUIDInfo {
 
  private:
   CPUIDInfo() {
+  }
+
+  void Init() {
 #ifdef CPUIDINFO_ARCH_X86
     X86Init();
 #elif defined(CPUIDINFO_ARCH_ARM)
@@ -101,6 +109,7 @@ class CPUIDInfo {
 #endif /* (arm or arm64) and windows */
 #endif
   }
+
   bool has_amx_bf16_{false};
   bool has_avx_{false};
   bool has_avx2_{false};
