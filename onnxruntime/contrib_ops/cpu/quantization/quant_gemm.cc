@@ -46,15 +46,14 @@ class QGemm : protected GemmBase, public MatMulIntegerBase {
     bool a_is_signed = a->IsDataType<int8_t>();
     const uint8_t* a_data = static_cast<const uint8_t*>(a->DataRaw());
 
-    BufferUniquePtr a_trans_buffer;
+    std::unique_ptr<Tensor> a_trans_buffer;
     if (trans_A_ == CblasTrans) {
       a_data = quantization::TransPoseInputData(a_data, a_trans_buffer, allocator, K, M);
     }
 
     bool b_is_signed;
     const uint8_t* b_data = nullptr;
-    // TODO: this one also has the same memory leak issue
-    BufferUniquePtr b_trans_buffer;
+    std::unique_ptr<Tensor> b_trans_buffer;
     if (nullptr == b) {
       b_data = static_cast<const uint8_t*>(packed_b_.get());
       b_is_signed = b_is_signed_;
@@ -72,10 +71,9 @@ class QGemm : protected GemmBase, public MatMulIntegerBase {
     // prepare output buffer of GEMM
     int32_t* gemm_output_data = nullptr;
     std::unique_ptr<Tensor> gemm_output_buffer;
-
     bool need_requant = y_scale != nullptr;
     if (need_requant) {
-      TensorShape outputshape{M, N};
+      TensorShape outputshape{static_cast<int64_t>(M), static_cast<int64_t>(N)};
       gemm_output_buffer = std::make_unique<Tensor>(DataTypeImpl::GetType<int32_t>(), outputshape, allocator);
       gemm_output_data = gemm_output_buffer->MutableData<int32_t>();
     } else {
