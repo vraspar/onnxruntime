@@ -4,9 +4,57 @@ on:
     branches:
       - master
       - main
+      - snnn/sca
   pull_request:
 
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+env:
+  AZCOPY_AUTO_LOGIN_TYPE: MSI
+  AZCOPY_MSI_CLIENT_ID: d1c41439-486c-4110-9052-d97199c8aa78
+
 jobs:
+  Onnxruntime-SCA:
+    runs-on: ["self-hosted", "1ES.Pool=onnxruntime-github-vs2022-mms"]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: false
+      - uses: actions/setup-python@v3
+        with:
+          python-version: '3.8.x'
+          architecture: 'x64'
+
+      - name: Download cuda
+        run: azcopy.exe cp --recursive "https://lotusscus.blob.core.windows.net/models/cuda_sdk/v11.8" cuda_sdk
+        
+      - name: Config cmake
+        run: python tools\ci_build\build.py --config Debug --build_dir b --skip_submodule_sync --build_csharp --update --parallel --cmake_generator "Visual Studio 17 2022" --build_shared_lib --enable_onnx_tests  --enable_pybind --use_cuda --cuda_home=cuda_sdk\v11.8 --enable_cuda_profiling --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES=75 --cmake_extra_defines onnxruntime_ENABLE_STATIC_ANALYSIS=ON        
+
+      - name: Run MSVC Code Analysis
+        uses: microsoft/msvc-code-analysis-action@v0.1.1
+        # Provide a unique ID to access the sarif output path
+        id: run-analysis
+        with:
+          cmakeBuildDirectory: ${{ github.workspace }}/b
+          buildConfiguration: Debug
+          # Ruleset file that will determine what checks will be run
+          ruleset: ${{ github.workspace }}\cmake\Sdl.ruleset
+
+      - name: Upload SARIF to GitHub
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: ${{ steps.run-analysis.outputs.sarif }}
+
+      # Upload SARIF file as an Artifact to download and view
+      - name: Upload SARIF as an Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: sarif-file
+          path: ${{ steps.run-analysis.outputs.sarif }}
+
   Onnxruntime-TVM:
     runs-on: windows-2019
     steps:
