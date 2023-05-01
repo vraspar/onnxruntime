@@ -22,20 +22,20 @@ class GemmHelper {
     }
 
     if (trans_left) {
-      out->M_ = left.NumDimensions() == 2 ? gsl::narrow<ptrdiff_t>(left[1]) : gsl::narrow<ptrdiff_t>(left[0]);
-      out->K_ = left.NumDimensions() == 2 ? gsl::narrow<ptrdiff_t>(left[0]) : 1;
+      out->M_ = left.NumDimensions() == 2 ? narrow<ptrdiff_t>(left[1]) : narrow<ptrdiff_t>(left[0]);
+      out->K_ = left.NumDimensions() == 2 ? narrow<ptrdiff_t>(left[0]) : 1;
     } else {
-      out->M_ = left.NumDimensions() == 2 ? gsl::narrow<ptrdiff_t>(left[0]) : 1;
-      out->K_ = left.NumDimensions() == 2 ? gsl::narrow<ptrdiff_t>(left[1])
-                                          : gsl::narrow<ptrdiff_t>(left[0]);
+      out->M_ = left.NumDimensions() == 2 ? narrow<ptrdiff_t>(left[0]) : 1;
+      out->K_ = left.NumDimensions() == 2 ? narrow<ptrdiff_t>(left[1])
+                                          : narrow<ptrdiff_t>(left[0]);
     }
 
     int k_dim;
     if (trans_right) {
-      out->N_ = gsl::narrow<ptrdiff_t>(right[0]);
+      out->N_ = narrow<ptrdiff_t>(right[0]);
       k_dim = 1;
     } else {
-      out->N_ = gsl::narrow<ptrdiff_t>(right[1]);
+      out->N_ = narrow<ptrdiff_t>(right[1]);
       k_dim = 0;
     }
 
