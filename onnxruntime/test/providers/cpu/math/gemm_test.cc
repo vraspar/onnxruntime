@@ -28,7 +28,7 @@ const constexpr auto run_with_tunable_op = &run_options;
 template <typename T>
 void TestGemmNoTrans() {
   auto run_test = [](bool b_is_initializer, bool c_is_initializer = false) {
-    OpTester test("Gemm");
+    OpTester test("Gemm", 13);
 
     test.AddAttribute("transA", (int64_t)0);
     test.AddAttribute("transB", (int64_t)0);

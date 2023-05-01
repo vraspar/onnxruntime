@@ -17,9 +17,11 @@ TEST(GemmHelperTest, no_trans) {
 }
 
 TEST(GemmHelperTest, negative_dim) {
+  // The Create function will fail if any of the dim is negative
   std::array<int64_t, 6> dims = {2, 4, 4, 3, 2, 3};
   for (size_t i = 0; i != dims.size(); ++i) {
     std::array<int64_t, 6> dims_copy = dims;
+    // Set a dim to negative
     dims_copy[i] = -1;
     std::unique_ptr<GemmHelper> h;
     int64_t* p = dims_copy.data();

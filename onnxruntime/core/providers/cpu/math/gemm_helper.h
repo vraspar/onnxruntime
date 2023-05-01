@@ -3,6 +3,7 @@
 
 #pragma once
 #include "core/common/common.h"
+#include "core/common/narrow.h"
 #include "core/util/math_cpuonly.h"
 #include "core/framework/tensor_shape.h"
 
