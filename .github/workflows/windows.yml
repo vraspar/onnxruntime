@@ -31,14 +31,10 @@ jobs:
         with:
           node-version: 18
 
-#      - name: Download cuda
-#        run: azcopy.exe cp --recursive "https://lotusscus.blob.core.windows.net/models/cuda_sdk/v11.8" cuda_sdk
-
-      # --use_cuda --cuda_home=${{ github.workspace }}\cuda_sdk\v11.8 --enable_cuda_profiling  --cmake_extra_defines CMAKE_CUDA_ARCHITECTURES=75
       - name: Build code
         run: python tools\ci_build\build.py --config Debug --build_dir D:\b --skip_submodule_sync --build_csharp --update --build --parallel --cmake_generator "Visual Studio 17 2022" --build_shared_lib --enable_pybind --cmake_extra_defines onnxruntime_ENABLE_STATIC_ANALYSIS=ON
         
-     -- name: Generate sarif
+      - name: Generate sarif
         working-directory: D:\b
         run: npx @microsoft/sarif-multitool merge *.sarif --recurse --output-directory=${{ github.workspace }}\output --output-file=MergeResult.sarif --merge-runs && dir ${{ github.workspace }}\output
 
