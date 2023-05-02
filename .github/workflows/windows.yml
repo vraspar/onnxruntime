@@ -4,43 +4,34 @@ on:
     branches:
       - master
       - main
-      - snnn/sdl2
   pull_request:
 
-concurrency:
-  group: ${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
-
-env:
-  AZCOPY_AUTO_LOGIN_TYPE: MSI
-  AZCOPY_MSI_CLIENT_ID: 63b63039-6328-442f-954b-5a64d124e5b4
-
 jobs:
-  Onnxruntime-SCA:
-    runs-on: ["self-hosted", "1ES.Pool=onnxruntime-github-vs2022-mms"]
+  Onnxruntime-TVM:
+    runs-on: windows-2019
     steps:
       - uses: actions/checkout@v3
         with:
-          submodules: false
+          submodules: true
       - uses: actions/setup-python@v3
         with:
-          python-version: '3.11.x'
+          python-version: '3.8.x'
           architecture: 'x64'
-
-      - uses: actions/setup-node@v3
+      - uses: conda-incubator/setup-miniconda@v2
         with:
-          node-version: 18
-
-      - name: Build code
-        run: python tools\ci_build\build.py --config Debug --build_dir D:\b --skip_submodule_sync --build_csharp --update --build --parallel --cmake_generator "Visual Studio 17 2022" --build_shared_lib --enable_pybind --cmake_extra_defines onnxruntime_ENABLE_STATIC_ANALYSIS=ON
-        
-      - name: Generate sarif
-        working-directory: D:\b
-        run: npx @microsoft/sarif-multitool merge *.sarif --recurse --output-directory=${{ github.workspace }}\output --output-file=MergeResult.sarif --merge-runs && dir ${{ github.workspace }}\output
-
-      - name: Upload SARIF to GitHub
-        uses: github/codeql-action/upload-sarif@v2
-        continue-on-error: true
-        with:
-          sarif_file: ${{ github.workspace }}\output\MergeResult.sarif
-          category: VS_SCA
+          activate-environment: ""
+      - name: 'Install LLVM-Dev'
+        shell: pwsh
+        run: |
+          conda install llvmdev=12.0.0
+          conda info
+          conda list
+      - name: 'Add LLVM-Dev binaries to the PATH'
+        run: |
+          echo "C:/Miniconda/Library/bin" >> $GITHUB_PATH
+      - name: 'Setup TVM EP Python requirements'
+        run: |
+          python3 -m pip install -r ${{ github.workspace }}/tools/ci_build/github/linux/tvm/requirements.txt
+      - name: 'Build and Test'
+        run: |
+          python3 ${{ github.workspace }}/tools/ci_build/build.py --build_dir build --config Release --skip_submodule_sync --parallel --enable_pybind --disable_contrib_ops --disable_ml_ops --skip_onnx_tests --use_tvm
