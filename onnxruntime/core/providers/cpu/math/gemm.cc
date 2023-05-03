@@ -234,16 +234,15 @@ Status Gemm<float>::UseSharedPrePackedBuffers(std::vector<BufferUniquePtr>& prep
 }
 
 template <typename T>
-void Gemm<T>::ComputeActivation(T* y_data, size_t y_size, concurrency::ThreadPool* thread_pool) const {
+void Gemm<T>::ComputeActivation(_Inout_updates_(y_size) T* y_data, ptrdiff_t y_size, _Inout_opt_ concurrency::ThreadPool* thread_pool) const {
   if (activation_) {
     std::unique_ptr<functors::ElementWiseRangedTransform<T>> f(activation_->Copy());
     f->input = y_data;
     f->output = y_data;
-    std::ptrdiff_t total_len = static_cast<std::ptrdiff_t>(y_size);
     double cost = f->Cost();
     functors::ElementWiseRangedTransform<T>* c(f.get());
     concurrency::ThreadPool::TryParallelFor(
-        thread_pool, total_len,
+        thread_pool, y_size,
         {static_cast<float>(sizeof(T)), static_cast<float>(sizeof(T)), cost},
         [c](std::ptrdiff_t first, std::ptrdiff_t last) { (*c)(first, last); });
   }
@@ -279,7 +278,7 @@ Status Gemm<T>::Compute(OpKernelContext* context) const {
   ComputeGemm(trans_A_, trans_B_, M, N, K, alpha_, A->Data<T>(), B->Data<T>(), beta_,
               c_data, c_shape, y_data, thread_pool);
 
-  ComputeActivation(y_data, SafeInt<size_t>(M) * N, thread_pool);
+  ComputeActivation(y_data, SafeInt<ptrdiff_t>(M) * N, thread_pool);
 
   return Status::OK();
 }

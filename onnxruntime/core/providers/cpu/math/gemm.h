@@ -44,7 +44,7 @@ class Gemm : protected GemmBase, public OpKernel {
   // For fused gemm + activation
   std::unique_ptr<functors::ElementWiseRangedTransform<T>> activation_;
 
-  void ComputeActivation(T* y_data, size_t y_size, concurrency::ThreadPool* thread_pool) const;
+  void ComputeActivation(_Inout_updates_(y_size) T* y_data, ptrdiff_t y_size, _Inout_opt_ concurrency::ThreadPool* thread_pool) const;
 };
 
 }  // namespace onnxruntime
