@@ -144,9 +144,9 @@ void Gemm<T>::ComputeGemm(CBLAS_TRANSPOSE trans_a, CBLAS_TRANSPOSE trans_b,
                           T alpha,
                           const T* a_data, const T* b_data,
                           T beta,
-                          const T* c_data, const TensorShape* c_shape,
-                          T* y_data,
-                          concurrency::ThreadPool* thread_pool) {
+                          _In_opt_ const T* c_data, _In_opt_ const TensorShape* c_shape,
+                          _Out_writes_(M* N)  T* y_data,
+                          _Inout_opt_ concurrency::ThreadPool* thread_pool) {
   // if input is empty tensor, return directly as nothing need to be calculated.
   if (M == 0 || N == 0)
     return;
@@ -158,7 +158,7 @@ void Gemm<T>::ComputeGemm(CBLAS_TRANSPOSE trans_a, CBLAS_TRANSPOSE trans_b,
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wclass-memaccess"
 #endif
-  //MLFloat16's constructor is explict, so here we need to use memset
+  // MLFloat16's constructor is explict, so here we need to use memset
   if (c_data == nullptr)
     memset(&beta, 0, sizeof(T));
 #if defined(__GNUC__) && defined(HAS_CLASS_MEMACCESS)
@@ -174,6 +174,58 @@ void Gemm<T>::ComputeGemm(CBLAS_TRANSPOSE trans_a, CBLAS_TRANSPOSE trans_b,
                 beta,
                 y_data,
                 thread_pool);
+}
+
+template <>
+void Gemm<MLFloat16>::ComputeGemm(CBLAS_TRANSPOSE trans_a, CBLAS_TRANSPOSE trans_b,
+                                  ptrdiff_t M, ptrdiff_t N, ptrdiff_t K,
+                                  MLFloat16 alpha,
+                                  const MLFloat16* a_data, const MLFloat16* b_data,
+                                  MLFloat16 beta,
+                                  _In_opt_ const MLFloat16* c_data, _In_opt_ const TensorShape* c_shape,
+                                  _Out_writes_(M* N)  MLFloat16* y_data,
+                                  _Inout_opt_ concurrency::ThreadPool* thread_pool) {
+  // if input is empty tensor, return directly as nothing need to be calculated.
+  if (M == 0 || N == 0)
+    return;
+
+  // Broadcast the bias as needed if bias is given
+  GemmBroadcastBias(M, N, beta, c_data, c_shape, y_data);
+
+#if defined(__GNUC__) && defined(HAS_CLASS_MEMACCESS)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+  // MLFloat16's constructor is explict, so here we need to use memset
+  if (c_data == nullptr)
+    memset(&beta, 0, sizeof(MLFloat16));
+#if defined(__GNUC__) && defined(HAS_CLASS_MEMACCESS)
+#pragma GCC diagnostic pop
+#endif
+#ifdef MLAS_F16VEC_INTRINSICS_SUPPORTED
+  if (trans_a == CblasNoTrans && trans_b == CblasNoTrans && c_shape == nullptr && alpha.ToFloat() == 1.0 && beta.ToFloat() == 1.0) {
+    MLAS_HALF_GEMM_DATA_PARAMS data;
+    data.A = a_data;
+    data.lda = K;
+    data.B = b_data;
+    data.ldb = N;
+    data.C = y_data;
+    data.ldc = N;
+
+    MlasHalfGemmBatch(M, N, K, 1, &data, thread_pool);
+    return;
+  }
+#endif
+  //Fallback to Eigen
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#endif
+  math::Gemm(trans_a, trans_b, M, N, K, *reinterpret_cast<Eigen::half*>(&alpha),
+             reinterpret_cast<const Eigen::half*>(a_data), reinterpret_cast<const Eigen::half*>(b_data), *reinterpret_cast<Eigen::half*>(&beta), reinterpret_cast<Eigen::half*>(y_data), thread_pool);
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 }
 
 template void Gemm<float>::ComputeGemm(CBLAS_TRANSPOSE trans_a, CBLAS_TRANSPOSE trans_b,

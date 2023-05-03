@@ -85,8 +85,8 @@ class GemmHelper {
 
 template <typename T>
 void GemmBroadcastBias(ptrdiff_t M, ptrdiff_t N, T beta,
-                       const T* c_data, const TensorShape* c_shape,
-                       T* y_data) {
+                       _In_opt_ const T* c_data, _In_opt_ const TensorShape* c_shape,
+                       _Out_writes_(M * N) T* y_data) {
   // Broadcast the bias as needed if bias is given
   if (beta != 0 && c_data != nullptr) {
     ORT_ENFORCE(c_shape != nullptr, "c_shape is required if c_data is provided");
