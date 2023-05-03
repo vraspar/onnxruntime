@@ -296,9 +296,9 @@ Status Gemm<MLFloat16>::Compute(OpKernelContext* context) const {
   ORT_RETURN_IF_ERROR(GemmHelper::Create(A->Shape(), trans_A_ != CblasNoTrans, B ? B->Shape() : b_shape_, trans_B_ != CblasNoTrans,
                                          C != nullptr ? C->Shape() : TensorShape({}), helper));
 
-  int64_t M = helper->M();
-  int64_t N = helper->N();
-  int64_t K = helper->K();
+  ptrdiff_t M = helper->M();
+  ptrdiff_t N = helper->N();
+  ptrdiff_t K = helper->K();
 
   auto Y = context->Output(0, {M, N});
 
