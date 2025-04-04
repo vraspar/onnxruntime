@@ -59,6 +59,8 @@ constexpr const char* kValidationMode_wgpuOnly = "wgpuOnly";
 constexpr const char* kValidationMode_basic = "basic";
 constexpr const char* kValidationMode_full = "full";
 
+constexpr const char* kMatMulWorkgroupSize = "WebGPU:matmulWorkgroupSize";
+
 }  // namespace options
 }  // namespace webgpu
 }  // namespace onnxruntime

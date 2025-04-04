@@ -194,12 +194,14 @@ Status MatMul::ComputeInternal(ComputeContext& context) const {
                                                    ? InlinedVector<int64_t>({4, 1, 1})
                                                    : InlinedVector<int64_t>({4, 4, 1});
 
-  const uint32_t dispatch_x = narrow<uint32_t>((dim_b_outer + MATMUL_PACKED_WORKGROUP_SIZE_X * elements_per_thread[0] - 1) /
-                                               (MATMUL_PACKED_WORKGROUP_SIZE_X * elements_per_thread[0]));
-  const uint32_t dispatch_y = narrow<uint32_t>((dim_a_outer + MATMUL_PACKED_WORKGROUP_SIZE_Y * elements_per_thread[1] - 1) /
-                                               (MATMUL_PACKED_WORKGROUP_SIZE_Y * elements_per_thread[1]));
-  const uint32_t dispatch_z = narrow<uint32_t>((static_cast<uint32_t>(batch_size) + MATMUL_PACKED_WORKGROUP_SIZE_Z * elements_per_thread[2] - 1) /
-                                               (MATMUL_PACKED_WORKGROUP_SIZE_Z * elements_per_thread[2]));
+  const auto [workgroup_size_x, workgroup_size_y, workgroup_size_z] = MatMul::GetWorkgroupSizes();
+
+  const uint32_t dispatch_x = narrow<uint32_t>((dim_b_outer + workgroup_size_x * elements_per_thread[0] - 1) /
+                                               (workgroup_size_x * elements_per_thread[0]));
+  const uint32_t dispatch_y = narrow<uint32_t>((dim_a_outer + workgroup_size_y * elements_per_thread[1] - 1) /
+                                               (workgroup_size_y * elements_per_thread[1]));
+  const uint32_t dispatch_z = narrow<uint32_t>((static_cast<uint32_t>(batch_size) + workgroup_size_z * elements_per_thread[2] - 1) /
+                                               (workgroup_size_z * elements_per_thread[2]));
 
   const int components = is_vec4 ? 4 : 1;
   const TensorShape a_shape_temp = CreateMatMulIntermediateShape(outer_dims_a, dim_a_outer, dim_inner, components);
@@ -215,7 +217,7 @@ Status MatMul::ComputeInternal(ComputeContext& context) const {
       .AddUniformVariables({{dim_a_outer}, {dim_b_outer}, {dim_inner}})
       .AddIndices(outer_dims)
       .SetDispatchGroupSize(dispatch_x, dispatch_y, dispatch_z)
-      .SetWorkgroupSize(MATMUL_PACKED_WORKGROUP_SIZE_X, MATMUL_PACKED_WORKGROUP_SIZE_Y, MATMUL_PACKED_WORKGROUP_SIZE_Z);
+      .SetWorkgroupSize(workgroup_size_x, workgroup_size_y, workgroup_size_z);
 
   if (has_bias) {
     const auto* bias = context.Input(2);

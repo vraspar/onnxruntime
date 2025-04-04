@@ -19,9 +19,24 @@ class MatMul final : public WebGpuKernel {
 
   Status ComputeInternal(ComputeContext& context) const override;
 
-  constexpr static uint32_t MATMUL_PACKED_WORKGROUP_SIZE_X = 8;
-  constexpr static uint32_t MATMUL_PACKED_WORKGROUP_SIZE_Y = 8;
-  constexpr static uint32_t MATMUL_PACKED_WORKGROUP_SIZE_Z = 1;
+  static void SetWorkgroupSizes(uint32_t x, uint32_t y, uint32_t z) {
+    workgroup_size_x_ = x;
+    workgroup_size_y_ = y;
+    workgroup_size_z_ = z;
+  }
+
+  static std::tuple<uint32_t, uint32_t, uint32_t> GetWorkgroupSizes() {
+    return {workgroup_size_x_, workgroup_size_y_, workgroup_size_z_};
+  }
+
+  static uint32_t GetWorkgroupSizeX() { return workgroup_size_x_; }
+  static uint32_t GetWorkgroupSizeY() { return workgroup_size_y_; }
+  static uint32_t GetWorkgroupSizeZ() { return workgroup_size_z_; }
+
+ private:
+  inline static uint32_t workgroup_size_x_ = 8;  // Default values
+  inline static uint32_t workgroup_size_y_ = 8;
+  inline static uint32_t workgroup_size_z_ = 1;
 };
 
 class MatMulNaiveProgram final : public Program<MatMulNaiveProgram> {
