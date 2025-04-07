@@ -6,6 +6,7 @@
 #include "core/providers/cpu/tensor/utils.h"
 #include "core/providers/webgpu/shader_helper.h"
 #include "core/providers/webgpu/webgpu_supported_types.h"
+#include "core/platform/env_var_utils.h"
 
 #include "core/providers/webgpu/data_transfer.h"
 namespace onnxruntime {
@@ -147,6 +148,13 @@ Status MatMul::ComputeInternal(ComputeContext& context) const {
     return context.RunProgram(program);
   }
 
+
+  using onnxruntime::ParseEnvironmentVariableWithDefault;
+
+  const auto workgroup_size_x = ParseEnvironmentVariableWithDefault<uint32_t>("ORT_MATMUL_WORKGROUP_X", 8);
+  const auto workgroup_size_y = ParseEnvironmentVariableWithDefault<uint32_t>("ORT_MATMUL_WORKGROUP_Z", 8);
+  const auto workgroup_size_z = ParseEnvironmentVariableWithDefault<uint32_t>("ORT_MATMUL_WORKGROUP_Z", 1);
+
   int64_t batchA = a->Shape().SizeToDimension(a->Shape().NumDimensions() - 2);
   int64_t batchB = b->Shape().SizeToDimension(b->Shape().NumDimensions() - 2);
 
@@ -193,8 +201,6 @@ Status MatMul::ComputeInternal(ComputeContext& context) const {
   InlinedVector<int64_t> elements_per_thread = dim_a_outer <= 8
                                                    ? InlinedVector<int64_t>({4, 1, 1})
                                                    : InlinedVector<int64_t>({4, 4, 1});
-
-  const auto [workgroup_size_x, workgroup_size_y, workgroup_size_z] = MatMul::GetWorkgroupSizes();
 
   const uint32_t dispatch_x = narrow<uint32_t>((dim_b_outer + workgroup_size_x * elements_per_thread[0] - 1) /
                                                (workgroup_size_x * elements_per_thread[0]));

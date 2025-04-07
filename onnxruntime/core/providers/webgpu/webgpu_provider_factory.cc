@@ -8,7 +8,6 @@
 #include "core/providers/webgpu/webgpu_execution_provider.h"
 #include "core/providers/webgpu/webgpu_provider_factory_creator.h"
 #include "core/providers/webgpu/webgpu_context.h"
-#include "core/providers/webgpu/math/matmul.h"
 #include "core/session/abi_session_options_impl.h"
 #include "core/session/ort_apis.h"
 
@@ -246,17 +245,17 @@ std::shared_ptr<IExecutionProviderFactory> WebGpuProviderFactoryCreator::Create(
   }
   LOGS_DEFAULT(VERBOSE) << "WebGPU EP pix capture enable: " << enable_pix_capture;
 
-  // Parse MatMul workgroup sizes if specified
-  std::string matmul_workgroup_size_str;
-  if (config_options.TryGetConfigEntry(kMatMulWorkgroupSize, matmul_workgroup_size_str)) {
-    uint32_t x, y, z;
-    if (std::sscanf(matmul_workgroup_size_str.c_str(), "%u,%u,%u", &x, &y, &z) == 3) {
-      webgpu::MatMul::SetWorkgroupSizes(x, y, z);
-      LOGS_DEFAULT(VERBOSE) << "WebGPU EP MatMul workgroup sizes set to: " << x << "," << y << "," << z;
-    } else {
-      ORT_THROW("MatMul workgroup size must contain exactly 3 values (x,y,z), got: ", matmul_workgroup_size_str);
-    }
-  }
+  // // Parse MatMul workgroup sizes if specified
+  // std::string matmul_workgroup_size_str;
+  // if (config_options.TryGetConfigEntry(kMatMulWorkgroupSize, matmul_workgroup_size_str)) {
+  //   uint32_t x, y, z;
+  //   if (std::sscanf(matmul_workgroup_size_str.c_str(), "%u,%u,%u", &x, &y, &z) == 3) {
+  //     webgpu::MatMul::SetWorkgroupSizes(x, y, z);
+  //     LOGS_DEFAULT(VERBOSE) << "WebGPU EP MatMul workgroup sizes set to: " << x << "," << y << "," << z;
+  //   } else {
+  //     ORT_THROW("MatMul workgroup size must contain exactly 3 values (x,y,z), got: ", matmul_workgroup_size_str);
+  //   }
+  // }
 
   //
   // STEP.4 - start initialization.
