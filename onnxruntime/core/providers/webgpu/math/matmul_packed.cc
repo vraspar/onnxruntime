@@ -5,6 +5,8 @@
 #include "core/providers/webgpu/shader_helper.h"
 #include "core/providers/webgpu/webgpu_supported_types.h"
 #include "core/providers/webgpu/webgpu_utils.h"
+#include "core/platform/env_var_utils.h"
+
 
 namespace onnxruntime {
 namespace webgpu {
@@ -74,7 +76,8 @@ Status MatMulProgram::MakeMatMulPackedVec4Source(ShaderHelper& shader,
   // elements per thread
   const auto elements_per_thread_x = elements_per_thread[0];
   const auto elements_per_thread_y = elements_per_thread[1];
-  const decltype(elements_per_thread_x) tile_inner = 32;
+  const decltype(elements_per_thread_x) tile_inner = ParseEnvironmentVariableWithDefault<int64_t>(
+      "ORT_WEBGPU_MATMUL_TILE_INNER", 32);
 
   const auto tile_a_outer = workgroup_size_y * elements_per_thread_y;
   const auto tile_b_outer = workgroup_size_x * elements_per_thread_x;
@@ -180,7 +183,8 @@ Status MatMulProgram::MakeMatMulPackedSource(ShaderHelper& shader, const ShaderI
                                              uint32_t workgroup_size_y) {
   const auto elements_per_thread_x = elements_per_thread[0];
   const auto elements_per_thread_y = elements_per_thread[1];
-  const decltype(elements_per_thread_x) tile_inner = 32;
+  const decltype(elements_per_thread_x) tile_inner = ParseEnvironmentVariableWithDefault<int64_t>(
+      "ORT_WEBGPU_MATMUL_TILE_INNER", 32);
 
   const auto tile_a_outer = workgroup_size_y * elements_per_thread_y;
   const auto tile_b_outer = workgroup_size_x * elements_per_thread_x;
