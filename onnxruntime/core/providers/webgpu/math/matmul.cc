@@ -152,7 +152,7 @@ Status MatMul::ComputeInternal(ComputeContext& context) const {
   using onnxruntime::ParseEnvironmentVariableWithDefault;
 
   const auto workgroup_size_x = ParseEnvironmentVariableWithDefault<uint32_t>("ORT_MATMUL_WORKGROUP_X", 8);
-  const auto workgroup_size_y = ParseEnvironmentVariableWithDefault<uint32_t>("ORT_MATMUL_WORKGROUP_Z", 8);
+  const auto workgroup_size_y = ParseEnvironmentVariableWithDefault<uint32_t>("ORT_MATMUL_WORKGROUP_Y", 8);
   const auto workgroup_size_z = ParseEnvironmentVariableWithDefault<uint32_t>("ORT_MATMUL_WORKGROUP_Z", 1);
 
   // elements per threrad
